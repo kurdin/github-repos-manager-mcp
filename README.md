@@ -8,7 +8,7 @@ This server is built using Node.js and provides a complete toolkit for repositor
 
 ✅ **Direct API calls** - No dependency on `gh` CLI, faster and more reliable  
 ✅ **Uses your existing `GH_TOKEN`** - Leverages what you already have set up  
-✅ **Comprehensive feature set** - 32 powerful tools for complete GitHub workflow  
+✅ **Comprehensive feature set** - 33 powerful tools for complete GitHub workflow  
 ✅ **Branch & commit management** - Create branches, explore history, compare changes  
 ✅ **Image upload support** - Upload and embed images directly in issues  
 ✅ **Smart defaults** - Set default repositories to streamline workflows  
@@ -116,7 +116,7 @@ If successful, you should see "GitHub API authentication successful" and "GitHub
 
 ## 🛠️ Complete Tool Reference
 
-This server provides **32 comprehensive tools** for complete GitHub workflow management:
+This server provides **33 comprehensive tools** for complete GitHub workflow management:
 
 ### Repository Management Tools
 - **`set_default_repo`**: Set a default owner and repository for subsequent commands to streamline your workflow.

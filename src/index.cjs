@@ -18,6 +18,7 @@ const PullRequestHandlers = require("./handlers/pull-requests.cjs");
 const UserHandlers = require("./handlers/users.cjs");
 const LabelsHandlers = require("./handlers/labels.cjs");
 const MilestonesHandlers = require("./handlers/milestones.cjs");
+const BranchCommitHandlers = require("./handlers/branches-commits.cjs");
 const toolsConfig = require("./utils/tools-config.cjs");
 
 class GitHubMCPServer {
@@ -37,6 +38,7 @@ class GitHubMCPServer {
     this.userHandler = new UserHandlers(this.api);
     this.labelsHandler = new LabelsHandlers(this.api);
     this.milestonesHandler = new MilestonesHandlers(this.api);
+    this.branchCommitHandler = new BranchCommitHandlers(this.api);
 
     this.server = new Server(
       {
@@ -60,6 +62,7 @@ class GitHubMCPServer {
     this.prHandler.setDefaultRepo(owner, repo);
     this.labelsHandler.setDefaultRepo(owner, repo);
     this.milestonesHandler.setDefaultRepo(owner, repo);
+    this.branchCommitHandler.setDefaultRepo(owner, repo);
   }
 
   setupToolHandlers() {
@@ -147,6 +150,18 @@ class GitHubMCPServer {
             return await this.milestonesHandler.editMilestone(args || {});
           case "delete_milestone":
             return await this.milestonesHandler.deleteMilestone(args || {});
+
+          // Branch and Commit tools
+          case "list_branches":
+            return await this.branchCommitHandler.listBranches(args || {});
+          case "create_branch":
+            return await this.branchCommitHandler.createBranch(args || {});
+          case "list_commits":
+            return await this.branchCommitHandler.listCommits(args || {});
+          case "get_commit_details":
+            return await this.branchCommitHandler.getCommitDetails(args || {});
+          case "compare_commits":
+            return await this.branchCommitHandler.compareCommits(args || {});
 
           default:
             throw new Error(`Unknown tool: ${name}`);
