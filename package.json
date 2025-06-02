@@ -1,19 +1,28 @@
 {
-  "name": "github-mcp-server",
+  "name": "github-repos-manager-mcp",
   "version": "1.0.0",
-  "description": "MCP server for GitHub integration using GitHub CLI",
-  "main": "index.js",
+  "description": "Model Context Protocol (MCP) server that enables your MCP client (e.g., Claude Desktop, Cline, Roo Code, Cursor, Windsurf, etc.) to interact with GitHub repositories using your GitHub personal access token.",
+  "main": "server.cjs",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node index.js"
+    "start": "node server.cjs",
+    "dev": "node server.cjs"
   },
   "keywords": [
     "mcp",
     "github",
     "claude",
-    "cli"
+    "cli",
+    "model-context-protocol",
+    "github-repos",
+    "github-issues",
+    "github-pull-requests",
+    "github-api",
+    "cursor",
+    "roocode",
+    "cline",
+    "windsurf"
   ],
-  "author": "Your Name",
+  "author": "Sergey Kurdin",
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.4.0"
@@ -22,6 +31,6 @@
     "node": ">=18.0.0"
   },
   "bin": {
-    "github-mcp-server": "./index.js"
+    "github-repos-manager-mcp": "server.cjs"
   }
 }
