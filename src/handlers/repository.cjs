@@ -219,7 +219,9 @@ ${repoData.license ? `**License:** ${repoData.license.name}` : ""}
     if (!owner || !repo) {
       throw new Error("Both owner and repo are required");
     }
-    this.setDefaultRepo(owner, repo);
+    // Set the default repository using instance variables
+    this.defaultOwner = owner;
+    this.defaultRepo = repo;
     console.error(`Default repository set to: ${owner}/${repo}`);
     return {
       content: [
