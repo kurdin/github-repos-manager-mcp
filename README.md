@@ -108,10 +108,62 @@ unset GH_TOKEN # Important: unset after testing
 ```
 If successful, you should see "GitHub API authentication successful" and "GitHub Repos Manager MCP Server running on stdio".
 
+**Note**: The server will only set a default repository if you explicitly configure it through environment variables, command line arguments, or use the `set_default_repo` tool. It never automatically sets a default repository.
+
 **Example File Locations for Claude Desktop `claude_desktop_config.json`:**
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 - **Linux**: `~/.config/Claude/claude_desktop_config.json` (path may vary)
+
+## ⚙️ Configuration Options
+
+### Default Repository Setting
+
+You can set a default repository to streamline your workflow and avoid specifying `owner` and `repo` in every command. There are three ways to configure this:
+
+#### 1. Environment Variables (Recommended for MCP clients)
+Add environment variables to your MCP client configuration:
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "node",
+      "args": ["/full/path/to/your/project/github-repos-manager-mcp/server.cjs"],
+      "env": {
+        "GH_TOKEN": "ghp_YOUR_ACTUAL_TOKEN_HERE",
+        "GH_DEFAULT_OWNER": "octocat",
+        "GH_DEFAULT_REPO": "Hello-World"
+      }
+    }
+  }
+}
+```
+
+#### 2. Command Line Arguments
+When running the server directly, you can pass default repository settings:
+```bash
+node server.cjs --default-owner octocat --default-repo Hello-World
+```
+
+#### 3. Runtime Tool Call
+Use the `set_default_repo` tool during your conversation to set or change the default repository:
+- "Set default repository to `microsoft/vscode`"
+- "Change the default to my own repo `username/my-project`"
+
+**Configuration Priority (highest to lowest)**:
+1. Command line arguments (`--default-owner`, `--default-repo`)
+2. Environment variables (`GH_DEFAULT_OWNER`, `GH_DEFAULT_REPO`) 
+3. Runtime tool calls (`set_default_repo`)
+
+**Benefits of Default Repository**:
+- Eliminates the need to specify `owner` and `repo` in every command
+- Streamlines workflows when working primarily with one repository
+- Can be changed at any time during your session using the `set_default_repo` tool
+- Optional - all tools work without a default repository set
+
+Once a default repository is set, you can omit `owner` and `repo` parameters from commands:
+- Instead of: "List issues for microsoft/vscode"  
+- Simply say: "List issues" (after setting microsoft/vscode as default)
 
 
 ## 🛠️ Complete Tool Reference
@@ -205,14 +257,17 @@ Once configured, you can ask your MCP client (e.g., Claude) to perform powerful 
 ### Repository Discovery & Management
 - "List my GitHub repositories, sort by creation date and show only private repos."
 - "Set default repository to `octocat/Spoon-Knife` for easier workflow."
-- "Search for repositories matching 'tensorflow examples language:python' and sort by stars."
-- "Get detailed information about the `my-org/internal-tooling` repository."
-- "Show me the contents of the `src/main.js` file in the default repository on the `develop` branch."
+- "Get detailed information about the `microsoft/vscode` repository."
+- "Show me the contents of the `src/main.js` file in microsoft/vscode on the `develop` branch."
+- "Show me the contents of the `src/main.js` file in the default repository on the `develop` branch." *(requires default repo set)*
 - "List all collaborators for `my-org/my-repo` who have admin permissions."
+- "Search for repositories matching 'tensorflow examples language:python' and sort by stars."
 
 ### Advanced Issue Management
 - "Create an issue in `my-org/my-repo` with title 'Urgent: UI Bug' and body 'The login button is broken on mobile.' Assign it to `user1` and `user2` and add the `bug` label."
-- "Upload a screenshot from `/Users/me/screenshots/bug_report.png` to issue #42 in the default repository."
+- "Create an issue with title 'Feature Request' and add the `enhancement` label." *(requires default repo set)*
+- "Upload a screenshot from `/Users/me/screenshots/bug_report.png` to issue #42 in microsoft/vscode."
+- "Upload a screenshot from `/Users/me/screenshots/bug_report.png` to issue #42 in the default repository." *(requires default repo set)*
 - "Edit issue #15: change title to 'Feature Request: Dark Mode', add the `enhancement` label, and close it."
 - "Lock issue #23 with reason 'resolved' to prevent further discussion."
 - "Get complete details for issue #7 including all metadata and current state."
@@ -225,7 +280,8 @@ Once configured, you can ask your MCP client (e.g., Claude) to perform powerful 
 - "Delete comment ID 789012 from issue #20."
 
 ### Labels & Milestones Management
-- "List all labels in the default repository to see current organization system."
+- "List all labels in `my-org/my-repo` to see current organization system."
+- "List all labels in the default repository to see current organization system." *(requires default repo set)*
 - "Create a new label called 'urgent' with red color (#ff0000) and description 'Requires immediate attention'."
 - "Edit the 'bug' label to change its color to orange (#FFA500) and update the description."
 - "Delete the outdated 'legacy' label from the repository."
@@ -235,13 +291,15 @@ Once configured, you can ask your MCP client (e.g., Claude) to perform powerful 
 - "Delete milestone #5 as it's no longer relevant to the project."
 
 ### Pull Request & Collaboration
-- "List all open pull requests for the default repository."
+- "List all open pull requests for `microsoft/vscode`."
+- "List all open pull requests for the default repository." *(requires default repo set)*
 - "Show me closed pull requests from the last month for `my-org/project-x`."
 - "Get my GitHub user profile information."
 - "Get user profile details for `github_username`."
 
 ### Branch & Commit Management
-- "List all branches in the default repository and show their protection status."
+- "List all branches in `my-org/my-repo` and show their protection status."
+- "List all branches in the default repository and show their protection status." *(requires default repo set)*
 - "Show only protected branches in `my-org/secure-repo`."
 - "Create a new feature branch called `feature/dark-mode` from the `develop` branch."
 - "List the last 10 commits on the `main` branch."
@@ -273,12 +331,20 @@ Once configured, you can ask your MCP client (e.g., Claude) to perform powerful 
    - Verify the `GH_TOKEN` is correctly placed within the `env` object in your MCP client's server configuration
    - Ensure the path to `server.cjs` is absolute and correct
    - Check that Node.js version is 18 or higher: `node --version`
+   - **Default Repository**: If you set `GH_DEFAULT_OWNER` and `GH_DEFAULT_REPO` environment variables, verify they're correct and the repository exists
 
 3. **Permission Issues**:
    - Ensure your token has the required scopes:
      - `repo` or `public_repo` (for repository access)
      - `user` (for user information)
      - `read:org` (for organization access, if needed)
+   - **Default Repository Access**: If using a default repository, ensure your token has access to that specific repository
+
+### Default Repository Configuration Issues
+- **Environment Variables Not Working**: Double-check spelling of `GH_DEFAULT_OWNER` and `GH_DEFAULT_REPO` in your MCP client config
+- **Command Line Arguments**: Ensure proper syntax when using `--default-owner` and `--default-repo` flags
+- **Tool Call Issues**: Use exact repository names: `owner/repo` format in the `set_default_repo` tool
+- **Override Behavior**: Remember that runtime tool calls can override environment variables, and command line args override both
 
 ### Performance & Rate Limiting
 - **GitHub API Rate Limits**: 5,000 requests/hour for authenticated users

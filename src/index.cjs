@@ -22,7 +22,7 @@ const BranchCommitHandlers = require("./handlers/branches-commits.cjs");
 const toolsConfig = require("./utils/tools-config.cjs");
 
 class GitHubMCPServer {
-  constructor() {
+  constructor(config = {}) {
     const token = process.env.GH_TOKEN
       ? process.env.GH_TOKEN.trim()
       : undefined;
@@ -39,6 +39,15 @@ class GitHubMCPServer {
     this.labelsHandler = new LabelsHandlers(this.api);
     this.milestonesHandler = new MilestonesHandlers(this.api);
     this.branchCommitHandler = new BranchCommitHandlers(this.api);
+
+    // Set default repo from config, environment variables, or keep unset
+    let defaultOwner = config.defaultOwner || process.env.GH_DEFAULT_OWNER;
+    let defaultRepo = config.defaultRepo || process.env.GH_DEFAULT_REPO;
+
+    if (defaultOwner && defaultRepo) {
+      this.setDefaultRepo(defaultOwner, defaultRepo);
+      console.error(`Default repository set: ${defaultOwner}/${defaultRepo}`);
+    }
 
     this.server = new Server(
       {
@@ -89,9 +98,21 @@ class GitHubMCPServer {
           case "get_repo_contents":
             return await this.repoHandler.getRepoContents(args || {});
           case "set_default_repo":
-            const result = await this.repoHandler.setDefaultRepo(args || {});
+            // Validate arguments
+            if (!args.owner || !args.repo) {
+              throw new Error("Both owner and repo are required");
+            }
+            // Set the default repo on all handlers
             this.setDefaultRepo(args.owner, args.repo);
-            return result;
+            // Return success response
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `Default repository set to: ${args.owner}/${args.repo}`,
+                },
+              ],
+            };
           case "list_repo_collaborators":
             return await this.repoHandler.listRepoCollaborators(args || {});
 
@@ -190,8 +211,17 @@ class GitHubMCPServer {
     }
 
     const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    console.error("GitHub Repos Manager MCP Server is running...");
+
+    try {
+      await this.server.connect(transport);
+      console.error("GitHub Repos Manager MCP Server is running...");
+
+      // Keep the process alive by preventing it from exiting
+      process.stdin.resume();
+    } catch (error) {
+      console.error("Failed to connect server:", error);
+      process.exit(1);
+    }
   }
 }
 

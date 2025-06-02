@@ -214,25 +214,6 @@ ${repoData.license ? `**License:** ${repoData.license.name}` : ""}
     }
   }
 
-  async setDefaultRepo(args) {
-    const { owner, repo } = args;
-    if (!owner || !repo) {
-      throw new Error("Both owner and repo are required");
-    }
-    // Set the default repository using instance variables
-    this.defaultOwner = owner;
-    this.defaultRepo = repo;
-    console.error(`Default repository set to: ${owner}/${repo}`);
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Default repository set to: ${owner}/${repo}`,
-        },
-      ],
-    };
-  }
-
   async listRepoCollaborators(args) {
     const owner = args.owner || this.defaultOwner;
     const repo = args.repo || this.defaultRepo;
