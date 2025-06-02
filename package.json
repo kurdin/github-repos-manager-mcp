@@ -1,0 +1,27 @@
+{
+  "name": "github-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for GitHub integration using GitHub CLI",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "keywords": [
+    "mcp",
+    "github",
+    "claude",
+    "cli"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "bin": {
+    "github-mcp-server": "./index.js"
+  }
+}
