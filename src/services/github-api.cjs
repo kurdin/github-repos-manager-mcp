@@ -1,5 +1,9 @@
 const fs = require("node:fs").promises;
-const { handleError, validateRequired, ErrorTypes } = require("../utils/error-handler.cjs");
+const {
+  handleError,
+  validateRequired,
+  ErrorTypes,
+} = require("../utils/error-handler.cjs");
 const path = require("node:path");
 
 class GitHubAPIService {
@@ -207,8 +211,6 @@ class GitHubAPIService {
   async testAuthentication() {
     try {
       const user = await this.makeGitHubRequest("/user");
-      // Debug logging disabled to avoid MCP protocol interference  
-      // console.error(`Authenticated as: ${user.login}`);
       return user;
     } catch (error) {
       console.error("Authentication failed:", error.message);

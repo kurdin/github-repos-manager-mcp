@@ -159,7 +159,7 @@ class GitHubMCPServer {
 
     this.defaultOwner = owner;
     this.defaultRepo = repo;
-    const successMessage = `Default repository set to: ${owner}/${repo}`;
+    const successMessage = `📦 Default repository set to: ${owner}/${repo}`;
     console.error(successMessage);
     return {
       content: [{ type: "text", text: successMessage }],
@@ -986,8 +986,9 @@ class GitHubMCPServer {
   }
 
   async run() {
+    let authenticatedUser;
     try {
-      await this.api.testAuthentication();
+      authenticatedUser = await this.api.testAuthentication();
     } catch (error) {
       console.error("Failed to authenticate with GitHub:", error.message);
       process.exit(1);
@@ -997,7 +998,14 @@ class GitHubMCPServer {
 
     try {
       await this.server.connect(transport);
-      console.error("GitHub Repos Manager MCP Server is running...");
+      console.error("🚀 GitHub Repos Manager MCP Server is running...");
+      console.error(
+        `👤 Authenticated as: ${authenticatedUser.login} (${
+          authenticatedUser.name || "No name set"
+        }) ${
+          authenticatedUser.email ? "email: " + authenticatedUser.email : ""
+        }`
+      );
 
       const totalToolsCount = Object.keys(toolsConfig).length;
       let availableToolsCount;
@@ -1005,7 +1013,7 @@ class GitHubMCPServer {
       // Show default repository if set
       if (this.defaultOwner && this.defaultRepo) {
         console.error(
-          `Default repository: ${this.defaultOwner}/${this.defaultRepo}`
+          `📦 Default repository: ${this.defaultOwner}/${this.defaultRepo}`
         );
       }
 
@@ -1013,7 +1021,7 @@ class GitHubMCPServer {
       if (this.allowedRepos) {
         const allowedReposList = Array.from(this.allowedRepos).join(", ");
         console.error(
-          `Repository operations restricted to: ${allowedReposList}`
+          `🔒 Repository operations restricted to: ${allowedReposList}`
         );
       }
 
@@ -1025,7 +1033,7 @@ class GitHubMCPServer {
           `${availableToolsCount} out of ${totalToolsCount} tools are available (allowed tools only).`
         );
         console.error(
-          `Allowed tools (${availableToolsCount}): ${allowedToolNames}`
+          `✅ Allowed tools (${availableToolsCount}): ${allowedToolNames}`
         );
       } else {
         // When allowedTools is not set, all tools except disabled ones are available
@@ -1033,14 +1041,14 @@ class GitHubMCPServer {
         availableToolsCount = totalToolsCount - disabledToolsCount;
 
         if (disabledToolsCount === 0) {
-          console.error(`All ${totalToolsCount} tools are available.`);
+          console.error(`✅ All ${totalToolsCount} tools are available.`);
         } else {
           console.error(
-            `${availableToolsCount} out of ${totalToolsCount} tools are available.`
+            `✅  ${availableToolsCount} out of ${totalToolsCount} tools are available.`
           );
           const disabledToolNames = Array.from(this.disabledTools).join(", ");
           console.error(
-            `Disabled tools (${disabledToolsCount}): ${disabledToolNames}`
+            `❌ Disabled tools (${disabledToolsCount}): ${disabledToolNames}`
           );
         }
       }
@@ -1068,13 +1076,13 @@ process.on("unhandledRejection", (reason, promise) => {
 });
 
 process.on("SIGINT", async () => {
-  console.error("Shutting down GitHub Repos Manager MCP Server...");
+  console.error("🛑 Shutting down GitHub Repos Manager MCP Server...");
   process.exit(0);
 });
 
 process.on("SIGTERM", async () => {
   console.error(
-    "Received SIGTERM, shutting down GitHub Repos Manager MCP Server..."
+    "⚠️  Received SIGTERM, shutting down GitHub Repos Manager MCP Server..."
   );
   process.exit(0);
 });
