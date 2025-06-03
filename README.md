@@ -162,9 +162,36 @@ Use the `set_default_repo` tool during your conversation to set or change the de
 - Optional - all tools work without a default repository set
 
 Once a default repository is set, you can omit `owner` and `repo` parameters from commands:
-- Instead of: "List issues for microsoft/vscode"  
+- Instead of: "List issues for microsoft/vscode"
 - Simply say: "List issues" (after setting microsoft/vscode as default)
 
+**Repository Locking**
+If you provide `GH_DEFAULT_OWNER` and `GH_DEFAULT_REPO` (or the equivalent command line options) when starting the server, that repository becomes **locked**.  The `set_default_repo` tool will refuse to change it and all other tools will automatically use the locked repository.
+
+### Disabling Tools
+The server administrator can disable specific tools by setting the `GH_DISABLED_TOOLS` environment variable (comma‑separated list) or `disabledTools` in the configuration object.  Disabled tools are omitted from the tool list and any attempt to call them will return an error.
+
+### Only Allowing Specific Tools
+You can restrict the server to only allow specific tools by setting the `GH_ALLOWED_TOOLS` environment variable (comma-separated list) or `allowedTools` in the configuration object.  Only the specified tools will be available, and all others will return an error if called.
+
+### Example Configuration for Disabled and Allowed Tools
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "node",
+      "args": ["/full/path/to/your/project/github-repos-manager-mcp/server.cjs"],
+      "env": {
+        "GH_TOKEN": "ghp_YOUR_ACTUAL_TOKEN_HERE",
+        "GH_DISABLED_TOOLS": "create_issue,edit_issue",
+        "GH_ALLOWED_TOOLS": "list_issues,list_prs"
+      }
+    }
+  }
+}
+```
+
+If **Disable Tools** are not specified, the server will use the default set of tools. If **Allowed Tools** are not specified, the server will use the default set of tools.
 
 ## 🛠️ Complete Tool Reference
 
