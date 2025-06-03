@@ -34,6 +34,7 @@ class GitHubMCPServer {
     this.defaultRepo = null;
     this.isRepoLockedByConfig = false; // Flag to indicate if repo is locked by initial config
     this.disabledTools = new Set();
+    this.allowedTools = null; // null means all tools allowed, Set means only specific tools
 
     const token = process.env.GH_TOKEN
       ? process.env.GH_TOKEN.trim()
@@ -49,12 +50,54 @@ class GitHubMCPServer {
     this.organizationHandler = OrganizationHandlersModule;
     this.advancedFeaturesHandler = AdvancedFeaturesHandlerModule;
 
-    const disabledToolsString =
-      config.disabledTools || process.env.GH_DISABLED_TOOLS;
-    if (disabledToolsString) {
-      disabledToolsString
-        .split(",")
-        .forEach((toolName) => this.disabledTools.add(toolName.trim()));
+    // Determine default/locked repository settings
+    this.lockedOwner = config.defaultOwner || process.env.GH_DEFAULT_OWNER;
+    this.lockedRepo = config.defaultRepo || process.env.GH_DEFAULT_REPO;
+    this.isRepoLocked = !!(this.lockedOwner && this.lockedRepo);
+
+    if (this.isRepoLocked) {
+      this.setDefaultRepo(this.lockedOwner, this.lockedRepo); // Set it for handlers
+      console.log(
+        `Repository operations are locked to ${this.lockedOwner}/${this.lockedRepo}.`
+      );
+    }
+
+    // Handle disabled tools from config or environment
+    const disabledToolsFromEnv = process.env.GH_DISABLED_TOOLS;
+    const disabledToolsFromConfig = config.disabledTools;
+    
+    if (disabledToolsFromEnv || disabledToolsFromConfig) {
+      // If config.disabledTools is already an array, use it directly
+      if (Array.isArray(disabledToolsFromConfig)) {
+        disabledToolsFromConfig.forEach((toolName) => 
+          this.disabledTools.add(toolName.trim())
+        );
+      } else if (disabledToolsFromEnv) {
+        // Parse from environment variable as comma-separated string
+        disabledToolsFromEnv
+          .split(",")
+          .forEach((toolName) => this.disabledTools.add(toolName.trim()));
+      }
+    }
+
+    // Handle allowed tools from config or environment
+    const allowedToolsFromEnv = process.env.GH_ALLOWED_TOOLS;
+    const allowedToolsFromConfig = config.allowedTools;
+    
+    if (allowedToolsFromEnv || allowedToolsFromConfig) {
+      this.allowedTools = new Set();
+      
+      // If config.allowedTools is already an array, use it directly
+      if (Array.isArray(allowedToolsFromConfig)) {
+        allowedToolsFromConfig.forEach((toolName) => 
+          this.allowedTools.add(toolName.trim())
+        );
+      } else if (allowedToolsFromEnv) {
+        // Parse from environment variable as comma-separated string
+        allowedToolsFromEnv
+          .split(",")
+          .forEach((toolName) => this.allowedTools.add(toolName.trim()));
+      }
     }
 
     let initialDefaultOwner =
@@ -133,9 +176,20 @@ class GitHubMCPServer {
   setupToolHandlers() {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       const allTools = Object.values(toolsConfig);
-      const availableTools = allTools.filter(
-        (tool) => !this.disabledTools.has(tool.name)
-      );
+      let availableTools;
+      
+      if (this.allowedTools) {
+        // If allowedTools is set, only those tools are available (disabledTools is ignored)
+        availableTools = allTools.filter(
+          (tool) => this.allowedTools.has(tool.name)
+        );
+      } else {
+        // If allowedTools is not set, all tools except disabled ones are available
+        availableTools = allTools.filter(
+          (tool) => !this.disabledTools.has(tool.name)
+        );
+      }
+      
       return {
         tools: availableTools,
       };
@@ -146,10 +200,21 @@ class GitHubMCPServer {
       let processedArgs;
 
       try {
-        if (this.disabledTools.has(name)) {
-          throw new Error(
-            `Tool '${name}' is disabled by server configuration.`
-          );
+        // Check if tool is allowed based on configuration
+        if (this.allowedTools) {
+          // If allowedTools is set, only those tools can be used
+          if (!this.allowedTools.has(name)) {
+            throw new Error(
+              `Tool '${name}' is not in the allowed tools list.`
+            );
+          }
+        } else {
+          // If allowedTools is not set, check disabled tools
+          if (this.disabledTools.has(name)) {
+            throw new Error(
+              `Tool '${name}' is disabled by server configuration.`
+            );
+          }
         }
 
         // For 'set_default_repo', we don't want to process args through getHandlerArgs
@@ -611,25 +676,40 @@ class GitHubMCPServer {
       console.error("GitHub Repos Manager MCP Server is running...");
 
       const totalToolsCount = Object.keys(toolsConfig).length;
-      const disabledToolsCount = this.disabledTools.size;
-      const availableToolsCount = totalToolsCount - disabledToolsCount;
-
+      let availableToolsCount;
+      
       if (this.isRepoLockedByConfig) {
         console.error(
           `Operations are LOCKED to repository: ${this.defaultOwner}/${this.defaultRepo}`
         );
       }
 
-      if (disabledToolsCount === 0) {
-        console.error(`All ${totalToolsCount} tools are available.`);
+      if (this.allowedTools) {
+        // When allowedTools is set, only those tools are available
+        availableToolsCount = this.allowedTools.size;
+        const allowedToolNames = Array.from(this.allowedTools).join(", ");
+        console.error(
+          `${availableToolsCount} out of ${totalToolsCount} tools are available (allowed tools only).`
+        );
+        console.error(
+          `Allowed tools (${availableToolsCount}): ${allowedToolNames}`
+        );
       } else {
-        console.error(
-          `${availableToolsCount} out of ${totalToolsCount} tools are available.`
-        );
-        const disabledToolNames = Array.from(this.disabledTools).join(", ");
-        console.error(
-          `Disabled tools (${disabledToolsCount}): ${disabledToolNames}`
-        );
+        // When allowedTools is not set, all tools except disabled ones are available
+        const disabledToolsCount = this.disabledTools.size;
+        availableToolsCount = totalToolsCount - disabledToolsCount;
+        
+        if (disabledToolsCount === 0) {
+          console.error(`All ${totalToolsCount} tools are available.`);
+        } else {
+          console.error(
+            `${availableToolsCount} out of ${totalToolsCount} tools are available.`
+          );
+          const disabledToolNames = Array.from(this.disabledTools).join(", ");
+          console.error(
+            `Disabled tools (${disabledToolsCount}): ${disabledToolNames}`
+          );
+        }
       }
 
       process.stdin.resume();
