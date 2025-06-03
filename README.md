@@ -1,22 +1,38 @@
 # GitHub Repos Manager MCP Server
 
+**Token-based GitHub automation management. No Docker for optimal performance, Flexible configuration for fine-grained control, 80+ tools with direct API integration.**
+
 A comprehensive Model Context Protocol (MCP) server that enables your MCP client (Claude Desktop, Roo Code, Cline, Cursor, Windsurf, etc.) to interact with GitHub repositories using your GitHub personal access token.
+
+This tool simplifies managing GitHub repositories using only a GitHub token for setup. By skipping Docker, it avoids unnecessary complexity, delivering fast and effective results through direct API integration.
 
 This server is built using Node.js and provides a complete toolkit for repository management, issue tracking, collaboration management, and more, all while leveraging the GitHub API for optimal performance.
 
-## 🚀 Key Advantages of This Approach
+## 🚀 Key Advantages over other GitHub Automation MCP Servers
 
-✅ **Direct API calls** - No dependency on `gh` CLI, faster and more reliable  
-✅ **Default Repository** - Set a default repository to streamline your workflow.
-✅ **Locked repository** - Set a default repository to protect your repository from accidental changes.
-✅ **Disable Tools** - Disable specific tools to protect your repository from accidental changes.
-✅ **Allowed Tools** - Restrict the server to only allow specific tools.
-✅ **Comprehensive feature set** - 170+ powerful tools for complete GitHub workflow.
-✅ **Branch & commit management** - Create branches, explore history, compare changes.
-✅ **Image upload support** - Upload and embed images directly in issues.
-✅ **Smart defaults** - Set default repositories to streamline workflows.
-✅ **Advanced filtering** - Sort, filter, and search with multiple criteria.
-✅ **Rate limit handling** - Built-in GitHub API rate limit management.
+🎯 **Simplicity**: Token-based access eliminates complexity.
+🌿 **Efficiency**: No Docker ensures lightweight, optimal performance.
+💪 **Power**: 80+ tools with direct API integration offer unmatched flexibility.
+🔒 **Flexibility**: Fine-grained control with configurable tools.
+
+### 🎯 Simple Setup & Operation
+✅ **No Docker required** - Simple Node.js server that runs anywhere  
+✅ **One token setup** - Only needs a GitHub Personal Access Token to work  
+✅ **Direct API integration** - No dependency on `gh` CLI, faster and more reliable  
+✅ **Zero configuration** - Works out of the box with just the token  
+
+### 🔒 Advanced Security & Control
+✅ **Allowed repositories** - Restrict operations to specific repos or owners  
+✅ **Tool management** - Enable/disable specific tools for fine-grained control  
+✅ **Default repository** - Set a default repo for streamlined workflows  
+✅ **Flexible permissions** - Configure exactly what the server can access  
+
+### 💪 Powerful Features
+✅ **Comprehensive toolkit** - 89 powerful tools for complete GitHub workflow  
+✅ **Branch & commit management** - Create branches, explore history, compare changes  
+✅ **Image upload support** - Upload and embed images directly in issues  
+✅ **Advanced filtering** - Sort, filter, and search with multiple criteria  
+✅ **Rate limit handling** - Built-in GitHub API rate limit management
 
 ## 🎯 Complete Feature Set
 
@@ -60,8 +76,10 @@ This server is built using Node.js and provides a complete toolkit for repositor
 
 ## Prerequisites
 
-1. **Node.js** (version 18 or higher recommended)
-2. **GitHub Personal Access Token (PAT)**: This is **CRUCIAL** for the server to function.
+### Minimal Requirements - It's That Simple!
+
+1. **Node.js** (version 18 or higher) - That's it!
+2. **GitHub Personal Access Token (PAT)** - The only configuration needed
    - Go to GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) or Fine-grained tokens.
    - Generate a new token with at least these scopes:
      - `repo` (Full control of private repositories) - Recommended for full functionality.
@@ -71,19 +89,68 @@ This server is built using Node.js and provides a complete toolkit for repositor
 
 ## Quick Setup
 
-### 1. Create the project
+### Option 1: Using npx (Simplest - No Installation Required!)
+
+You can run this server directly without cloning or installing:
+
 ```bash
-clone https://github.com/kurdin/github-repos-manager-mcp.git
-cd github-repos-manager-mcp
-# Save the server.cjs, package.json, and README.md files into this directory.
-npm install
-chmod +x server.cjs # Make the server script executable
+# Run directly with npx
+npx github-repos-manager-mcp
 ```
 
-### 2. Configure Your MCP Client (e.g., Claude Desktop, Roo Code, Cline, Cursor, Windsurf, etc.)
-Add the following configuration to your MCP client.
-- Replace `/full/path/to/your/project/github-repos-manager-mcp/server.cjs` with the actual absolute path to the `server.cjs` script.
-- **Crucially, replace `"ghp_YOUR_ACTUAL_TOKEN_HERE"` with your GitHub Personal Access Token within the `env` block.** This is how the server receives the token.
+### Option 2: Clone and Install
+
+```bash
+git clone https://github.com/kurdin/github-repos-manager-mcp.git
+cd github-repos-manager-mcp
+npm install
+```
+
+### 2. Configure Your MCP Client
+
+Add the appropriate configuration to your MCP client (Claude Desktop, Roo Code, Cline, Cursor, Windsurf, etc.):
+
+#### Using npx (Recommended - No Installation!)
+
+**For macOS/Linux:**
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "github-repos-manager-mcp"
+      ],
+      "env": {
+        "GH_TOKEN": "ghp_YOUR_ACTUAL_TOKEN_HERE"
+      }
+    }
+  }
+}
+```
+
+**For Windows:**
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx.cmd", // Use npx.cmd for Windows
+      "args": [
+        "-y",
+        "github-repos-manager-mcp"
+      ],
+      "env": {
+        "GH_TOKEN": "ghp_YOUR_ACTUAL_TOKEN_HERE"
+      }
+    }
+  }
+}
+```
+
+#### Using Local Installation
+
+If you cloned the repository, use the full path to `server.cjs`:
 
 ```json
 {
@@ -98,6 +165,8 @@ Add the following configuration to your MCP client.
   }
 }
 ```
+
+**Important**: Replace `"ghp_YOUR_ACTUAL_TOKEN_HERE"` with your actual GitHub Personal Access Token.
 
 ### 3. Test the Server
 Once the MCP client is configured with the correct path to `server.cjs` and your `GH_TOKEN`, the server should start automatically when the client attempts to use one of its tools.
@@ -126,6 +195,25 @@ You can set a default repository to streamline your workflow and avoid specifyin
 
 #### 1. Environment Variables (Recommended for MCP clients)
 Add environment variables to your MCP client configuration:
+
+**Using npx:**
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["github-repos-manager-mcp"],
+      "env": {
+        "GH_TOKEN": "ghp_YOUR_ACTUAL_TOKEN_HERE",
+        "GH_DEFAULT_OWNER": "octocat",
+        "GH_DEFAULT_REPO": "Hello-World"
+      }
+    }
+  }
+}
+```
+
+**Using local installation:**
 ```json
 {
   "mcpServers": {
@@ -168,16 +256,95 @@ Once a default repository is set, you can omit `owner` and `repo` parameters fro
 - Instead of: "List issues for microsoft/vscode"
 - Simply say: "List issues" (after setting microsoft/vscode as default)
 
-**Repository Locking**
-If you provide `GH_DEFAULT_OWNER` and `GH_DEFAULT_REPO` (or the equivalent command line options) when starting the server, that repository becomes **locked**.  The `set_default_repo` tool will refuse to change it and all other tools will automatically use the locked repository.
 
-### Disabling Tools
-The server administrator can disable specific tools by setting the `GH_DISABLED_TOOLS` environment variable (comma‑separated list) or `disabledTools` in the configuration object.  Disabled tools are omitted from the tool list and any attempt to call them will return an error.
+### Repository Access Control
 
-### Only Allowing Specific Tools
-You can restrict the server to only allow specific tools by setting the `GH_ALLOWED_TOOLS` environment variable (comma-separated list) or `allowedTools` in the configuration object.  Only the specified tools will be available, and all others will return an error if called.
+You can restrict which repositories the server can access using the `GH_ALLOWED_REPOS` environment variable or `--allowed-repos` command line argument. This is a security feature that ensures the server can only operate on approved repositories.
 
-### Example Configuration for Disabled and Allowed Tools
+#### Allowed Repositories Configuration
+
+**1. Environment Variable (for MCP clients)**
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "node",
+      "args": ["/path/to/server.cjs"],
+      "env": {
+        "GH_TOKEN": "ghp_YOUR_TOKEN",
+        "GH_ALLOWED_REPOS": "owner1/repo1,owner2/repo2,owner3"
+      }
+    }
+  }
+}
+```
+
+**2. Command Line Argument**
+```bash
+node server.cjs --allowed-repos "microsoft/vscode,facebook/react,google"
+```
+
+**How it works:**
+- **Full repo paths** (`owner/repo`): Only that specific repository is allowed
+- **Owner only** (`owner`): All repositories from that owner are allowed
+- **Mixed**: You can combine both formats
+
+**Examples:**
+- `"microsoft/vscode"` - Only the vscode repository from Microsoft
+- `"kurdin"` - All repositories owned by kurdin
+- `"kurdin,microsoft/vscode,facebook/react"` - All kurdin's repos plus specific repos
+
+### Tool Access Control
+
+#### Disabling Specific Tools
+Disable tools that you don't want to be available by setting the `GH_DISABLED_TOOLS` environment variable or using `--disabled-tools` command line argument.
+
+#### Allowing Only Specific Tools
+For maximum security, you can restrict the server to only allow specific tools by setting the `GH_ALLOWED_TOOLS` environment variable or using `--allowed-tools` command line argument.
+
+**Important:** If both `GH_ALLOWED_TOOLS` and `GH_DISABLED_TOOLS` are set, `GH_ALLOWED_TOOLS` takes precedence.
+
+### Complete Configuration Example
+
+**Using npx (macOS/Linux):**
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["github-repos-manager-mcp"],
+      "env": {
+        "GH_TOKEN": "ghp_YOUR_ACTUAL_TOKEN_HERE",
+        "GH_DEFAULT_OWNER": "mycompany",
+        "GH_DEFAULT_REPO": "main-project",
+        "GH_ALLOWED_REPOS": "mycompany,trusted-org/specific-repo",
+        "GH_ALLOWED_TOOLS": "list_issues,create_issue,list_prs,get_repo_info"
+      }
+    }
+  }
+}
+```
+
+**Using npx (Windows):**
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx.cmd",
+      "args": ["github-repos-manager-mcp"],
+      "env": {
+        "GH_TOKEN": "ghp_YOUR_ACTUAL_TOKEN_HERE",
+        "GH_DEFAULT_OWNER": "mycompany",
+        "GH_DEFAULT_REPO": "main-project",
+        "GH_ALLOWED_REPOS": "mycompany,trusted-org/specific-repo",
+        "GH_ALLOWED_TOOLS": "list_issues,create_issue,list_prs,get_repo_info"
+      }
+    }
+  }
+}
+```
+
+**Using local installation:**
 ```json
 {
   "mcpServers": {
@@ -186,96 +353,135 @@ You can restrict the server to only allow specific tools by setting the `GH_ALLO
       "args": ["/full/path/to/your/project/github-repos-manager-mcp/server.cjs"],
       "env": {
         "GH_TOKEN": "ghp_YOUR_ACTUAL_TOKEN_HERE",
-        "GH_DISABLED_TOOLS": "create_issue,edit_issue",
-        "GH_ALLOWED_TOOLS": "list_issues,list_prs"
+        "GH_DEFAULT_OWNER": "mycompany",
+        "GH_DEFAULT_REPO": "main-project",
+        "GH_ALLOWED_REPOS": "mycompany,trusted-org/specific-repo",
+        "GH_ALLOWED_TOOLS": "list_issues,create_issue,list_prs,get_repo_info"
       }
     }
   }
 }
 ```
 
-If **Disable Tools** are not specified, the server will use the default set of tools. If **Allowed Tools** are not specified, the server will use the default set of tools.
+**Command Line Equivalents:**
+```bash
+node server.cjs \
+  --default-owner mycompany \
+  --default-repo main-project \
+  --allowed-repos "mycompany,trusted-org/specific-repo" \
+  --allowed-tools "list_issues,create_issue,list_prs,get_repo_info"
+```
 
 ## 🛠️ Complete Tool Reference
 
-This server provides **170+ comprehensive tools** for complete GitHub workflow management:
-### Newly Added Tools
+This server provides **89 comprehensive tools** for complete GitHub workflow management:
 
-#### Enhanced Pull Request Management
-- `create_pull_request`
-- `edit_pull_request`
-- `get_pr_details`
-- `list_pr_reviews`
-- `create_pr_review`
-- `list_pr_files`
+### Enhanced Pull Request Management
+- **`create_pull_request`**: Create a new pull request with title, body, and branch specifications.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `title` (string, required), `body` (string, optional), `head` (string, required - branch with changes), `base` (string, required - target branch), `draft` (boolean, optional), `maintainer_can_modify` (boolean, optional)
+- **`edit_pull_request`**: Update an existing pull request's title, body, state, or base branch.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `pull_number` (integer, required), `title` (string, optional), `body` (string, optional), `state` (string, optional - "open" or "closed"), `base` (string, optional)
+- **`get_pr_details`**: Get comprehensive information about a pull request including status and merge details.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `pull_number` (integer, required)
+- **`list_pr_reviews`**: List all reviews on a pull request with their status and comments.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `pull_number` (integer, required), `per_page` (integer, optional, default 30)
+- **`create_pr_review`**: Submit a review on a pull request with comments and approval status.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `pull_number` (integer, required), `body` (string, optional), `event` (string, optional - "APPROVE", "REQUEST_CHANGES", "COMMENT"), `comments` (array, optional)
+- **`list_pr_files`**: List all files changed in a pull request with additions/deletions stats.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `pull_number` (integer, required), `per_page` (integer, optional, default 30)
 
-#### File & Content Management
-- `create_file`
-- `update_file`
-- `upload_file`
-- `delete_file`
+### File & Content Management
+- **`create_file`**: Create a new file in the repository with content and commit message.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `path` (string, required), `content` (string, required), `message` (string, required), `branch` (string, optional), `committer` (object, optional)
+- **`update_file`**: Update an existing file's content with a new commit.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `path` (string, required), `content` (string, required), `message` (string, required), `sha` (string, required - current file SHA), `branch` (string, optional)
+- **`upload_file`**: Upload a local file to the repository (binary files supported).
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `local_path` (string, required), `repo_path` (string, required), `message` (string, required), `branch` (string, optional)
+- **`delete_file`**: Delete a file from the repository with a commit message.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `path` (string, required), `message` (string, required), `sha` (string, required - current file SHA), `branch` (string, optional)
 
-#### Security & Access Management
-- `list_deploy_keys`
-- `create_deploy_key`
-- `delete_deploy_key`
-- `list_webhooks`
-- `create_webhook`
-- `edit_webhook`
-- `delete_webhook`
-- `list_secrets`
-- `update_secret`
+### Security & Access Management
+- **`list_deploy_keys`**: List all deploy keys for a repository with their permissions.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `per_page` (integer, optional, default 30)
+- **`create_deploy_key`**: Add a new deploy key to the repository for secure access.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `title` (string, required), `key` (string, required - public SSH key), `read_only` (boolean, optional, default true)
+- **`delete_deploy_key`**: Remove a deploy key from the repository.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `key_id` (integer, required)
+- **`list_webhooks`**: List all webhooks configured for the repository.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `per_page` (integer, optional, default 30)
+- **`create_webhook`**: Create a new webhook for repository events.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `config` (object, required - url and content_type), `events` (array, optional, default ["push"]), `active` (boolean, optional)
+- **`edit_webhook`**: Update webhook configuration, events, or active status.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `hook_id` (integer, required), `config` (object, optional), `events` (array, optional), `active` (boolean, optional)
+- **`delete_webhook`**: Remove a webhook from the repository.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `hook_id` (integer, required)
+- **`list_secrets`**: List repository secrets (names only, values are encrypted).
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `per_page` (integer, optional, default 30)
+- **`update_secret`**: Create or update a repository secret for Actions.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `secret_name` (string, required), `encrypted_value` (string, required), `key_id` (string, required)
 
-#### GitHub Actions & Workflows
-- `list_workflows`
-- `list_workflow_runs`
-- `get_workflow_run_details`
-- `trigger_workflow`
-- `download_workflow_artifacts`
-- `cancel_workflow_run`
+### GitHub Actions & Workflows
+*Note: These tools are placeholders for future GitHub Actions integration.*
+- **`list_workflows`**: List all GitHub Actions workflows in the repository.
+- **`list_workflow_runs`**: List workflow runs with filtering options.
+- **`get_workflow_run_details`**: Get detailed information about a workflow run.
+- **`trigger_workflow`**: Manually trigger a workflow dispatch event.
+- **`download_workflow_artifacts`**: Download artifacts from a workflow run.
+- **`cancel_workflow_run`**: Cancel a workflow run in progress.
 
-#### Repository Analytics & Insights
-- `get_repo_stats`
-- `list_repo_topics`
-- `update_repo_topics`
-- `get_repo_languages`
-- `list_stargazers`
-- `list_watchers`
-- `list_forks`
-- `get_repo_traffic`
+### Repository Analytics & Insights
+- **`get_repo_stats`**: Get comprehensive repository statistics including contributor activity.
+  - *Args*: `owner` (string, optional), `repo` (string, optional)
+- **`list_repo_topics`**: List all topics (tags) associated with the repository.
+  - *Args*: `owner` (string, optional), `repo` (string, optional)
+- **`update_repo_topics`**: Update the topics for better repository discovery.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `names` (array of strings, required)
+- **`get_repo_languages`**: Get programming languages used in the repository with byte counts.
+  - *Args*: `owner` (string, optional), `repo` (string, optional)
+- **`list_stargazers`**: List users who have starred the repository.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `per_page` (integer, optional, default 30)
+- **`list_watchers`**: List users watching the repository for notifications.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `per_page` (integer, optional, default 30)
+- **`list_forks`**: List all forks of the repository with sorting options.
+  - *Args*: `owner` (string, optional), `repo` (string, optional), `sort` (string, optional - "newest", "oldest", "stargazers"), `per_page` (integer, optional)
+- **`get_repo_traffic`**: Get repository traffic data including views and clones (requires admin access).
+  - *Args*: `owner` (string, optional), `repo` (string, optional)
 
-#### Advanced Search & Discovery
-- `search_issues`
-- `search_commits`
-- `search_code`
-- `search_users`
-- `search_topics`
+### Advanced Search & Discovery
+- **`search_issues`**: Search for issues and pull requests across GitHub.
+  - *Args*: `query` (string, required), `sort` (string, optional - "comments", "reactions", "interactions", "created", "updated"), `order` (string, optional - "asc", "desc"), `per_page` (integer, optional)
+- **`search_commits`**: Search for commits across repositories.
+  - *Args*: `query` (string, required), `sort` (string, optional - "author-date", "committer-date"), `order` (string, optional), `per_page` (integer, optional)
+- **`search_code`**: Search for code across GitHub repositories.
+  - *Args*: `query` (string, required), `sort` (string, optional - "indexed"), `order` (string, optional), `per_page` (integer, optional)
+- **`search_users`**: Search for users and organizations.
+  - *Args*: `query` (string, required), `sort` (string, optional - "followers", "repositories", "joined"), `order` (string, optional), `per_page` (integer, optional)
+- **`search_topics`**: Search for repository topics.
+  - *Args*: `query` (string, required), `per_page` (integer, optional, default 30)
 
-#### Organization Management
-- `list_org_repos`
-- `list_org_members`
-- `get_org_info`
-- `list_org_teams`
-- `get_team_members`
-- `manage_team_repos`
+### Organization Management
+- **`list_org_repos`**: List all repositories in an organization.
+  - *Args*: `org` (string, required), `type` (string, optional - "all", "public", "private", "forks", "sources", "member"), `sort` (string, optional), `per_page` (integer, optional)
+- **`list_org_members`**: List members of an organization.
+  - *Args*: `org` (string, required), `filter` (string, optional - "2fa_disabled", "all"), `role` (string, optional - "all", "admin", "member"), `per_page` (integer, optional)
+- **`get_org_info`**: Get detailed information about an organization.
+  - *Args*: `org` (string, required)
+- **`list_org_teams`**: List all teams in an organization.
+  - *Args*: `org` (string, required), `per_page` (integer, optional, default 30)
+- **`get_team_members`**: List members of a specific team.
+  - *Args*: `org` (string, required), `team_slug` (string, required), `role` (string, optional - "member", "maintainer", "all"), `per_page` (integer, optional)
+- **`manage_team_repos`**: Add or remove repository access for a team.
+  - *Args*: `org` (string, required), `team_slug` (string, required), `owner` (string, required), `repo` (string, required), `permission` (string, optional - "pull", "push", "admin"), `action` (string, required - "add" or "remove")
 
-#### Projects & Boards
-*Note: These tools are currently placeholders and will be fully implemented in future updates.*
-- `list_repo_projects`
-- `create_project`
-- `list_project_columns`
-- `list_project_cards`
-- `create_project_card`
-- `move_project_card`
-
-#### Advanced Features
-*Note: These tools are currently placeholders and will be fully implemented in future updates.*
-- `code_quality_checks`
-- `custom_dashboards`
-- `automated_reporting`
-- `notification_management`
-- `release_management`
-- `dependency_analysis`
+### Projects & Advanced Features
+*Note: Some of these tools are placeholders for future enhancements.*
+- **`list_repo_projects`**: List repository projects (classic projects).
+- **`code_quality_checks`**: Placeholder for future code quality analysis.
+- **`custom_dashboards`**: Placeholder for custom dashboard creation.
+- **`automated_reporting`**: Placeholder for automated report generation.
+- **`notification_management`**: Placeholder for notification settings.
+- **`release_management`**: Placeholder for release management features.
+- **`dependency_analysis`**: Placeholder for dependency scanning.
 
 ### Repository Management Tools
 - **`set_default_repo`**: Set a default owner and repository for subsequent commands to streamline your workflow.
