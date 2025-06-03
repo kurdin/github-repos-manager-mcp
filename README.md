@@ -92,7 +92,7 @@ This server is built using Node.js and provides a complete toolkit for repositor
 
 ## Quick Setup
 
-### Option 1: Using npx (Simplest - No Installation Required!)
+### Using npx (Simplest - No Installation Required!)
 
 Make sure you have Node.js installed, then use `npx` to run the server directly
 Check that you have exported your GitHub token as an environment variable named `GH_TOKEN` or include it in your MCP client configuration.
@@ -142,7 +142,7 @@ npx -y github-repos-manager-mcp
 
 This command will automatically download and run the latest version of the server without needing to install anything locally.
 
-### Option 2: Clone, Install and Run Locally
+### Clone, Install and Run Locally
 If you prefer to run the server locally, clone the repository and install dependencies:
 
 ```bash
