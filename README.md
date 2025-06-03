@@ -1,6 +1,6 @@
-# ![github-svgrepo-com (1)](https://github.com/user-attachments/assets/24b48a9d-8d00-4212-921e-c0c4ddc223b6) GitHub Repos Manager MCP Server
+# ![github-svgrepo-logo](https://github.com/user-attachments/assets/24b48a9d-8d00-4212-921e-c0c4ddc223b6) GitHub Repos Manager MCP Server
 
-**Token-based GitHub automation management. No Docker for optimal performance, Flexible configuration for fine-grained control, 80+ tools with direct API integration.**
+**Token-based GitHub automation management. No Docker for optimal performance, Flexible configuration for fine-grained control, 89 tools with direct API integration.**
 
 A comprehensive Model Context Protocol (MCP) server that enables your MCP client (Claude Desktop, Roo Code, Cline, Cursor, Windsurf, etc.) to interact with GitHub repositories using your GitHub personal access token.
 
@@ -8,11 +8,14 @@ This tool simplifies managing GitHub repositories using only a GitHub token for 
 
 This server is built using Node.js and provides a complete toolkit for repository management, issue tracking, collaboration management, and more, all while leveraging the GitHub API for optimal performance.
 
+
+##### [Skip to Quick Setup and MCP Client Configuration](#quick-setup)
+
 ## 🚀 Key Advantages over other GitHub Automation MCP Servers
 
 🎯 **Simplicity**: Token-based access eliminates complexity.
 🌿 **Efficiency**: No Docker ensures lightweight, optimal performance.
-💪 **Power**: 80+ tools with direct API integration offer unmatched flexibility.
+💪 **Power**: 89 tools with direct API integration offer unmatched flexibility.
 🔒 **Flexibility**: Fine-grained control with configurable tools.
 
 ### 🎯 Simple Setup & Operation
@@ -91,47 +94,21 @@ This server is built using Node.js and provides a complete toolkit for repositor
 
 ### Option 1: Using npx (Simplest - No Installation Required!)
 
+Make sure you have Node.js installed, then use `npx` to run the server directly
+Check that you have exported your GitHub token as an environment variable named `GH_TOKEN` or include it in your MCP client configuration.
+
 You can run this server directly without cloning or installing:
 
 ```bash
 # Run directly with npx
-npx github-repos-manager-mcp
+npx -y github-repos-manager-mcp
 ```
-
-### Option 2: Clone and Install
-
-```bash
-git clone https://github.com/kurdin/github-repos-manager-mcp.git
-cd github-repos-manager-mcp
-npm install
-```
-
-### 2. Configure Your MCP Client
-
-Add the appropriate configuration to your MCP client (Claude Desktop, Roo Code, Cline, Cursor, Windsurf, etc.):
-
-#### Using npx (Recommended - No Installation!)
-
-```bash
-# Run directly with npx
-npx github-repos-manager-mcp
-```
-
-### Option 2: Clone and Install
-
-```bash
-git clone https://github.com/kurdin/github-repos-manager-mcp.git
-cd github-repos-manager-mcp
-npm install
-```
-
-### 2.
 
 **For macOS/Linux:**
 ```json
 {
   "mcpServers": {
-    "github": {
+    "github-repos-manager": {
       "command": "npx",
       "args": [
         "-y",
@@ -145,12 +122,12 @@ npm install
 }
 ```
 
-**For Windows:**
+**For Windows, in some cases you may need to use npx.cmd instead of npx:**
 ```json
 {
   "mcpServers": {
-    "github": {
-      "command": "npx.cmd", // Use npx.cmd for Windows
+    "github-repos-manager": {
+      "command": "npx.cmd",
       "args": [
         "-y",
         "github-repos-manager-mcp"
@@ -163,14 +140,23 @@ npm install
 }
 ```
 
-#### Using Local Installation
+This command will automatically download and run the latest version of the server without needing to install anything locally.
 
-If you cloned the repository, use the full path to `server.cjs`:
+### Option 2: Clone, Install and Run Locally
+If you prefer to run the server locally, clone the repository and install dependencies:
+
+```bash
+git clone https://github.com/kurdin/github-repos-manager.git
+cd github-repos-manager
+npm install
+```
+
+Then, configure your MCP client to point to the local server using the full path to `server.cjs`:
 
 ```json
 {
   "mcpServers": {
-    "github": {
+    "github-repos-manager": {
       "command": "node",
       "args": ["/full/path/to/your/project/github-repos-manager-mcp/server.cjs"],
       "env": {
@@ -215,9 +201,9 @@ Add environment variables to your MCP client configuration:
 ```json
 {
   "mcpServers": {
-    "github": {
+    "github-repos-manager": {
       "command": "npx",
-      "args": ["github-repos-manager-mcp"],
+      "args": ["-y", "github-repos-manager-mcp"],
       "env": {
         "GH_TOKEN": "ghp_YOUR_ACTUAL_TOKEN_HERE",
         "GH_DEFAULT_OWNER": "octocat",
@@ -232,7 +218,7 @@ Add environment variables to your MCP client configuration:
 ```json
 {
   "mcpServers": {
-    "github": {
+    "github-repos-manager": {
       "command": "node",
       "args": ["/full/path/to/your/project/github-repos-manager-mcp/server.cjs"],
       "env": {
@@ -282,7 +268,7 @@ You can restrict which repositories the server can access using the `GH_ALLOWED_
 ```json
 {
   "mcpServers": {
-    "github": {
+    "github-repos-manager": {
       "command": "node",
       "args": ["/path/to/server.cjs"],
       "env": {
@@ -325,9 +311,9 @@ For maximum security, you can restrict the server to only allow specific tools b
 ```json
 {
   "mcpServers": {
-    "github": {
+    "github-repos-manager": {
       "command": "npx",
-      "args": ["github-repos-manager-mcp"],
+      "args": ["-y", "github-repos-manager-mcp"],
       "env": {
         "GH_TOKEN": "ghp_YOUR_ACTUAL_TOKEN_HERE",
         "GH_DEFAULT_OWNER": "mycompany",
@@ -344,9 +330,9 @@ For maximum security, you can restrict the server to only allow specific tools b
 ```json
 {
   "mcpServers": {
-    "github": {
+    "github-repos-manager": {
       "command": "npx.cmd",
-      "args": ["github-repos-manager-mcp"],
+      "args": ["-y", "github-repos-manager-mcp"],
       "env": {
         "GH_TOKEN": "ghp_YOUR_ACTUAL_TOKEN_HERE",
         "GH_DEFAULT_OWNER": "mycompany",
@@ -363,7 +349,7 @@ For maximum security, you can restrict the server to only allow specific tools b
 ```json
 {
   "mcpServers": {
-    "github": {
+    "github-repos-manager": {
       "command": "node",
       "args": ["/full/path/to/your/project/github-repos-manager-mcp/server.cjs"],
       "env": {
