@@ -27,6 +27,12 @@ for (let i = 0; i < args.length; i++) {
       .map((tool) => tool.trim())
       .filter((tool) => tool);
     i++;
+  } else if (args[i] === "--allowed-repos" && args[i + 1]) {
+    config.allowedRepos = args[i + 1]
+      .split(",")
+      .map((repo) => repo.trim())
+      .filter((repo) => repo);
+    i++;
   }
 }
 
