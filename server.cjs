@@ -15,6 +15,12 @@ for (let i = 0; i < args.length; i++) {
   } else if (args[i] === "--default-repo" && args[i + 1]) {
     config.defaultRepo = args[i + 1];
     i++;
+  } else if (args[i] === "--disabled-tools" && args[i + 1]) {
+    config.disabledTools = args[i + 1].split(',').map(tool => tool.trim()).filter(tool => tool);
+    i++;
+  } else if (args[i] === "--allowed-tools" && args[i + 1]) {
+    config.allowedTools = args[i + 1].split(',').map(tool => tool.trim()).filter(tool => tool);
+    i++;
   }
 }
 
