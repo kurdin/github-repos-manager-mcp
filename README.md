@@ -7,13 +7,16 @@ This server is built using Node.js and provides a complete toolkit for repositor
 ## 🚀 Key Advantages of This Approach
 
 ✅ **Direct API calls** - No dependency on `gh` CLI, faster and more reliable  
-✅ **Uses your existing `GH_TOKEN`** - Leverages what you already have set up  
-✅ **Comprehensive feature set** - 33 powerful tools for complete GitHub workflow  
-✅ **Branch & commit management** - Create branches, explore history, compare changes  
-✅ **Image upload support** - Upload and embed images directly in issues  
-✅ **Smart defaults** - Set default repositories to streamline workflows  
-✅ **Advanced filtering** - Sort, filter, and search with multiple criteria  
-✅ **Rate limit handling** - Built-in GitHub API rate limit management
+✅ **Default Repository** - Set a default repository to streamline your workflow.
+✅ **Locked repository** - Set a default repository to protect your repository from accidental changes.
+✅ **Disable Tools** - Disable specific tools to protect your repository from accidental changes.
+✅ **Allowed Tools** - Restrict the server to only allow specific tools.
+✅ **Comprehensive feature set** - 170+ powerful tools for complete GitHub workflow.
+✅ **Branch & commit management** - Create branches, explore history, compare changes.
+✅ **Image upload support** - Upload and embed images directly in issues.
+✅ **Smart defaults** - Set default repositories to streamline workflows.
+✅ **Advanced filtering** - Sort, filter, and search with multiple criteria.
+✅ **Rate limit handling** - Built-in GitHub API rate limit management.
 
 ## 🎯 Complete Feature Set
 
@@ -70,7 +73,7 @@ This server is built using Node.js and provides a complete toolkit for repositor
 
 ### 1. Create the project
 ```bash
-mkdir github-repos-manager-mcp
+clone https://github.com/kurdin/github-repos-manager-mcp.git
 cd github-repos-manager-mcp
 # Save the server.cjs, package.json, and README.md files into this directory.
 npm install
@@ -195,10 +198,10 @@ If **Disable Tools** are not specified, the server will use the default set of t
 
 ## 🛠️ Complete Tool Reference
 
-This server provides **89 comprehensive tools** for complete GitHub workflow management:
+This server provides **170+ comprehensive tools** for complete GitHub workflow management:
 ### Newly Added Tools
 
-#### Enhanced Pull Request Management (6 tools)
+#### Enhanced Pull Request Management
 - `create_pull_request`
 - `edit_pull_request`
 - `get_pr_details`
@@ -206,13 +209,13 @@ This server provides **89 comprehensive tools** for complete GitHub workflow man
 - `create_pr_review`
 - `list_pr_files`
 
-#### File & Content Management (4 tools)
+#### File & Content Management
 - `create_file`
 - `update_file`
 - `upload_file`
 - `delete_file`
 
-#### Security & Access Management (9 tools)
+#### Security & Access Management
 - `list_deploy_keys`
 - `create_deploy_key`
 - `delete_deploy_key`
@@ -223,7 +226,7 @@ This server provides **89 comprehensive tools** for complete GitHub workflow man
 - `list_secrets`
 - `update_secret`
 
-#### GitHub Actions & Workflows (6 tools)
+#### GitHub Actions & Workflows
 - `list_workflows`
 - `list_workflow_runs`
 - `get_workflow_run_details`
@@ -231,7 +234,7 @@ This server provides **89 comprehensive tools** for complete GitHub workflow man
 - `download_workflow_artifacts`
 - `cancel_workflow_run`
 
-#### Repository Analytics & Insights (8 tools)
+#### Repository Analytics & Insights
 - `get_repo_stats`
 - `list_repo_topics`
 - `update_repo_topics`
@@ -241,14 +244,14 @@ This server provides **89 comprehensive tools** for complete GitHub workflow man
 - `list_forks`
 - `get_repo_traffic`
 
-#### Advanced Search & Discovery (5 tools)
+#### Advanced Search & Discovery
 - `search_issues`
 - `search_commits`
 - `search_code`
 - `search_users`
 - `search_topics`
 
-#### Organization Management (6 tools)
+#### Organization Management
 - `list_org_repos`
 - `list_org_members`
 - `get_org_info`
@@ -256,7 +259,7 @@ This server provides **89 comprehensive tools** for complete GitHub workflow man
 - `get_team_members`
 - `manage_team_repos`
 
-#### Projects & Boards (Projects V2 focus - 6 tools)
+#### Projects & Boards
 *Note: These tools are currently placeholders and will be fully implemented in future updates.*
 - `list_repo_projects`
 - `create_project`
@@ -265,7 +268,7 @@ This server provides **89 comprehensive tools** for complete GitHub workflow man
 - `create_project_card`
 - `move_project_card`
 
-#### Advanced Features (6 tools)
+#### Advanced Features
 *Note: These tools are currently placeholders and will be fully implemented in future updates.*
 - `code_quality_checks`
 - `custom_dashboards`
@@ -273,8 +276,6 @@ This server provides **89 comprehensive tools** for complete GitHub workflow man
 - `notification_management`
 - `release_management`
 - `dependency_analysis`
-
-### Existing Core Tools
 
 ### Repository Management Tools
 - **`set_default_repo`**: Set a default owner and repository for subsequent commands to streamline your workflow.
