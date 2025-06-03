@@ -41,13 +41,23 @@ branchCommitTools.forEach((toolName) => {
 console.log("\n=== Testing Server Import ===\n");
 
 try {
-  const GitHubMCPServer = require("./src/server.cjs");
+  const GitHubMCPServer = require("./src/index.cjs");
   console.log("✅ Server module imports successfully");
 
   // Test instantiation
-  const server = new GitHubMCPServer();
+  // Pass a dummy sdkModules object as it's now required by the constructor
+  const dummySdkModules = {
+    Server: function () {},
+    StdioServerTransport: function () {},
+    CallToolRequestSchema: {},
+    ListToolsRequestSchema: {},
+  };
+  const server = new GitHubMCPServer({}, dummySdkModules);
   console.log("✅ Server instantiates successfully");
 
+  // Note: The server.branchCommitHandler check might need adjustment
+  // if its initialization depends on a fully functional SDK setup.
+  // For now, assuming it's set up in the constructor regardless of SDK.
   if (server.branchCommitHandler) {
     console.log("✅ Branch/Commit handler is properly initialized");
   } else {

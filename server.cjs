@@ -37,8 +37,31 @@ for (let i = 0; i < args.length; i++) {
 }
 
 // Start the server with config
-const server = new GitHubMCPServer(config);
-server.run().catch((error) => {
-  console.error("Server error:", error);
-  process.exit(1);
-});
+async function main() {
+  try {
+    const { Server } = await import(
+      "@modelcontextprotocol/sdk/server/index.js"
+    );
+    const { StdioServerTransport } = await import(
+      "@modelcontextprotocol/sdk/server/stdio.js"
+    );
+    const { CallToolRequestSchema, ListToolsRequestSchema } = await import(
+      "@modelcontextprotocol/sdk/types.js"
+    );
+
+    const sdkModules = {
+      Server,
+      StdioServerTransport,
+      CallToolRequestSchema,
+      ListToolsRequestSchema,
+    };
+
+    const server = new GitHubMCPServer(config, sdkModules);
+    await server.run();
+  } catch (error) {
+    console.error("Server error:", error);
+    process.exit(1);
+  }
+}
+
+main();

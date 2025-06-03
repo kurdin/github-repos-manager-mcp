@@ -6,11 +6,6 @@
  */
 
 const toolsConfig = require("./src/utils/tools-config.cjs");
-const GitHubMCPServer = require("./src/index.cjs");
-const {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} = require("@modelcontextprotocol/sdk/types.js");
 
 class GitHubMCPTester {
   constructor() {
