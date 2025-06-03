@@ -32,9 +32,9 @@ class GitHubMCPServer {
   constructor(config = {}) {
     this.defaultOwner = null;
     this.defaultRepo = null;
-    this.isRepoLockedByConfig = false; // Flag to indicate if repo is locked by initial config
     this.disabledTools = new Set();
     this.allowedTools = null; // null means all tools allowed, Set means only specific tools
+    this.allowedRepos = null; // null means all repos allowed, Set means only specific repos/owners
 
     const token = process.env.GH_TOKEN
       ? process.env.GH_TOKEN.trim()
@@ -50,17 +50,9 @@ class GitHubMCPServer {
     this.organizationHandler = OrganizationHandlersModule;
     this.advancedFeaturesHandler = AdvancedFeaturesHandlerModule;
 
-    // Determine default/locked repository settings
-    this.lockedOwner = config.defaultOwner || process.env.GH_DEFAULT_OWNER;
-    this.lockedRepo = config.defaultRepo || process.env.GH_DEFAULT_REPO;
-    this.isRepoLocked = !!(this.lockedOwner && this.lockedRepo);
-
-    if (this.isRepoLocked) {
-      this.setDefaultRepo(this.lockedOwner, this.lockedRepo); // Set it for handlers
-      console.log(
-        `Repository operations are locked to ${this.lockedOwner}/${this.lockedRepo}.`
-      );
-    }
+    // Set default repository if provided
+    this.defaultOwner = config.defaultOwner || process.env.GH_DEFAULT_OWNER;
+    this.defaultRepo = config.defaultRepo || process.env.GH_DEFAULT_REPO;
 
     // Handle disabled tools from config or environment
     const disabledToolsFromEnv = process.env.GH_DISABLED_TOOLS;
@@ -100,17 +92,24 @@ class GitHubMCPServer {
       }
     }
 
-    let initialDefaultOwner =
-      config.defaultOwner || process.env.GH_DEFAULT_OWNER;
-    let initialDefaultRepo = config.defaultRepo || process.env.GH_DEFAULT_REPO;
-
-    if (initialDefaultOwner && initialDefaultRepo) {
-      this.defaultOwner = initialDefaultOwner;
-      this.defaultRepo = initialDefaultRepo;
-      this.isRepoLockedByConfig = true;
-      console.error(
-        `Default repository LOCKED by configuration to: ${this.defaultOwner}/${this.defaultRepo}`
-      );
+    // Handle allowed repos from config or environment
+    const allowedReposFromEnv = process.env.GH_ALLOWED_REPOS;
+    const allowedReposFromConfig = config.allowedRepos;
+    
+    if (allowedReposFromEnv || allowedReposFromConfig) {
+      this.allowedRepos = new Set();
+      
+      // If config.allowedRepos is already an array, use it directly
+      if (Array.isArray(allowedReposFromConfig)) {
+        allowedReposFromConfig.forEach((repo) => 
+          this.allowedRepos.add(repo.trim())
+        );
+      } else if (allowedReposFromEnv) {
+        // Parse from environment variable as comma-separated string
+        allowedReposFromEnv
+          .split(",")
+          .forEach((repo) => this.allowedRepos.add(repo.trim()));
+      }
     }
 
     this.server = new Server(
@@ -129,17 +128,33 @@ class GitHubMCPServer {
   }
 
   setDefaultRepo(owner, repo) {
-    if (this.isRepoLockedByConfig) {
-      const lockMessage = `Repository is locked by server configuration to ${this.defaultOwner}/${this.defaultRepo}. Cannot be changed by tool.`;
-      console.warn(lockMessage);
-      return {
-        content: [{ type: "text", text: lockMessage }],
-        isError: true,
-      };
+    // First check if this repo is allowed
+    if (this.allowedRepos) {
+      const repoIdentifier = `${owner}/${repo}`;
+      const isAllowed = this.allowedRepos.has(repoIdentifier) || 
+                       this.allowedRepos.has(owner) ||
+                       Array.from(this.allowedRepos).some(allowed => {
+                         if (allowed.includes('/')) {
+                           return allowed === repoIdentifier;
+                         }
+                         return allowed === owner;
+                       });
+      
+      if (!isAllowed) {
+        const allowedList = Array.from(this.allowedRepos).join(', ');
+        return {
+          content: [{ 
+            type: "text", 
+            text: `Repository ${repoIdentifier} is not in the allowed repositories list. Allowed: ${allowedList}` 
+          }],
+          isError: true,
+        };
+      }
     }
+    
     this.defaultOwner = owner;
     this.defaultRepo = repo;
-    const successMessage = `Default repository set by tool to: ${owner}/${repo}`;
+    const successMessage = `Default repository set to: ${owner}/${repo}`;
     console.error(successMessage);
     return {
       content: [{ type: "text", text: successMessage }],
@@ -149,27 +164,41 @@ class GitHubMCPServer {
   getHandlerArgs(args) {
     const effectiveArgs = { ...(args || {}) };
 
-    if (this.isRepoLockedByConfig) {
-      if (effectiveArgs.owner && effectiveArgs.owner !== this.defaultOwner) {
-        throw new Error(
-          `Operations are locked to repository ${this.defaultOwner}/${this.defaultRepo}. Provided owner '${effectiveArgs.owner}' is not allowed.`
-        );
-      }
-      if (effectiveArgs.repo && effectiveArgs.repo !== this.defaultRepo) {
-        throw new Error(
-          `Operations are locked to repository ${this.defaultOwner}/${this.defaultRepo}. Provided repo '${effectiveArgs.repo}' is not allowed.`
-        );
-      }
+    // Apply defaults if not specified
+    if (!effectiveArgs.owner && this.defaultOwner) {
       effectiveArgs.owner = this.defaultOwner;
+    }
+    if (!effectiveArgs.repo && this.defaultRepo) {
       effectiveArgs.repo = this.defaultRepo;
-    } else {
-      if (!effectiveArgs.owner && this.defaultOwner) {
-        effectiveArgs.owner = this.defaultOwner;
+    }
+
+    // Check if the repository is allowed
+    if (this.allowedRepos && effectiveArgs.owner) {
+      let isAllowed = false;
+      
+      if (effectiveArgs.repo) {
+        // Check full repo path
+        const repoIdentifier = `${effectiveArgs.owner}/${effectiveArgs.repo}`;
+        isAllowed = this.allowedRepos.has(repoIdentifier) || this.allowedRepos.has(effectiveArgs.owner);
+      } else {
+        // Only owner specified, check if owner is allowed
+        isAllowed = this.allowedRepos.has(effectiveArgs.owner) ||
+                   Array.from(this.allowedRepos).some(allowed => 
+                     allowed.startsWith(`${effectiveArgs.owner}/`)
+                   );
       }
-      if (!effectiveArgs.repo && this.defaultRepo) {
-        effectiveArgs.repo = this.defaultRepo;
+      
+      if (!isAllowed) {
+        const allowedList = Array.from(this.allowedRepos).join(', ');
+        const attempted = effectiveArgs.repo 
+          ? `${effectiveArgs.owner}/${effectiveArgs.repo}`
+          : effectiveArgs.owner;
+        throw new Error(
+          `Repository or owner '${attempted}' is not in the allowed list. Allowed: ${allowedList}`
+        );
       }
     }
+    
     return effectiveArgs;
   }
 
@@ -678,9 +707,18 @@ class GitHubMCPServer {
       const totalToolsCount = Object.keys(toolsConfig).length;
       let availableToolsCount;
       
-      if (this.isRepoLockedByConfig) {
+      // Show default repository if set
+      if (this.defaultOwner && this.defaultRepo) {
         console.error(
-          `Operations are LOCKED to repository: ${this.defaultOwner}/${this.defaultRepo}`
+          `Default repository: ${this.defaultOwner}/${this.defaultRepo}`
+        );
+      }
+      
+      // Show allowed repositories if restricted
+      if (this.allowedRepos) {
+        const allowedReposList = Array.from(this.allowedRepos).join(', ');
+        console.error(
+          `Repository operations restricted to: ${allowedReposList}`
         );
       }
 
