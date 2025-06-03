@@ -1,13 +1,8 @@
 #!/usr/bin/env node
 
-// const { Server } = require("@modelcontextprotocol/sdk/server/index.js"); // Changed to dynamic import
-// const {
-//   StdioServerTransport,
-// } = require("@modelcontextprotocol/sdk/server/stdio.js"); // Changed to dynamic import
-// const {
-// CallToolRequestSchema,
-// ListToolsRequestSchema,
-// } = require("@modelcontextprotocol/sdk/types.js"); // Changed to dynamic import
+const { Server } = require("@modelcontextprotocol/sdk/server/index.js");
+const { StdioServerTransport } = require("@modelcontextprotocol/sdk/server/stdio.js");
+const { CallToolRequestSchema, ListToolsRequestSchema } = require("@modelcontextprotocol/sdk/types.js");
 
 // Import all handler modules
 const GitHubAPIService = require("./services/github-api.cjs");
@@ -109,25 +104,19 @@ class GitHubMCPServer {
     }
     // End of Tool filtering logic
 
-    // Initialize server with dynamic import
-    import("@modelcontextprotocol/sdk/server/index.js").then(({ Server }) => {
-      this.server = new Server(
-        {
-          name: "GitHub Repos Manager MCP Server",
-          version: "1.0.0",
+    // Initialize server
+    this.server = new Server(
+      {
+        name: "GitHub Repos Manager MCP Server",
+        version: "1.0.0",
+      },
+      {
+        capabilities: {
+          tools: {},
         },
-        {
-          capabilities: {
-            tools: {},
-          },
-        }
-      );
-      this.setupToolHandlers(); // Call setupToolHandlers after server is initialized
-    }).catch(error => {
-      console.error("Failed to import Server:", error);
-      // Handle initialization error, perhaps by exiting or setting a flag
-      process.exit(1); // Exit if server fails to initialize
-    });
+      }
+    );
+    this.setupToolHandlers(); // Call setupToolHandlers after server is initialized
   }
 
   setDefaultRepo(owner, repo) {
@@ -141,19 +130,18 @@ class GitHubMCPServer {
   }
 
   setupToolHandlers() {
-    import("@modelcontextprotocol/sdk/types.js").then(({ ListToolsRequestSchema, CallToolRequestSchema }) => {
-      // List available tools
-      this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-        return {
-          // Return filtered list of tools
-          tools: Object.values(this.availableToolsConfig),
-        };
-      });
+    // List available tools
+    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+      return {
+        // Return filtered list of tools
+        tools: Object.values(this.availableToolsConfig),
+      };
+    });
 
-      // Handle tool calls
-      this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-        const toolNameFromRequest = request.params.name;
-        // Check if the tool is available before any other logic
+    // Handle tool calls
+    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+      const toolNameFromRequest = request.params.name;
+      // Check if the tool is available before any other logic
         if (!this.availableToolsConfig[toolNameFromRequest]) {
           return {
             content: [
@@ -367,10 +355,7 @@ class GitHubMCPServer {
           };
         }
       });
-    }).catch(error => {
-      console.error("Failed to import SDK types:", error);
-      process.exit(1);
-    });
+    // No .catch here as the import().then() is removed for SDK types
   }
 
   async run() {
@@ -382,20 +367,19 @@ class GitHubMCPServer {
     //   process.exit(1);
     // }
 
-    // Dynamically import StdioServerTransport and connect
-    import("@modelcontextprotocol/sdk/server/stdio.js")
-      .then(async ({ StdioServerTransport }) => {
-        const transport = new StdioServerTransport();
-        await this.server.connect(transport);
-        console.error("GitHub Repos Manager MCP Server is running...");
+    // StdioServerTransport is now required at the top
+    const transport = new StdioServerTransport();
 
-        // Keep the process alive by preventing it from exiting
-        process.stdin.resume();
-      })
-      .catch((error) => {
-        console.error("Failed to connect server:", error);
-        process.exit(1);
-      });
+    try {
+      await this.server.connect(transport);
+      console.error("GitHub Repos Manager MCP Server is running...");
+
+      // Keep the process alive by preventing it from exiting
+      process.stdin.resume();
+    } catch (error) {
+      console.error("Failed to connect server:", error);
+      process.exit(1);
+    }
   }
 }
 
