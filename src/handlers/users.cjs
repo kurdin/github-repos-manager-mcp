@@ -1,41 +1,15 @@
-class UserHandlers {
-  constructor(apiService) {
-    this.api = apiService;
-  }
+// src/handlers/users.cjs
 
-  async getUserInfo(args) {
-    const { username } = args;
-    const endpoint = username ? `/users/${username}` : "/user";
-    const user = await this.api.makeGitHubRequest(endpoint);
+const userFormatters = require("../formatters/users.cjs");
 
-    const info = `
-**${user.login}** ${user.name ? `(${user.name})` : ""}
+async function getUserInfo(args, apiService) {
+  const { username } = args; // username is optional; if not provided, fetches authenticated user
+  const endpoint = username ? `/users/${username}` : "/user";
+  const user = await apiService.makeGitHubRequest(endpoint);
 
-**Bio:** ${user.bio || "No bio"}
-**Company:** ${user.company || "N/A"}
-**Location:** ${user.location || "N/A"}
-**Email:** ${user.email || "Not public"}
-**Blog:** ${user.blog || "N/A"}
-**Twitter:** ${user.twitter_username ? `@${user.twitter_username}` : "N/A"}
-
-**Public Repos:** ${user.public_repos}
-**Public Gists:** ${user.public_gists}
-**Followers:** ${user.followers}
-**Following:** ${user.following}
-
-**Account Created:** ${new Date(user.created_at).toLocaleDateString()}
-**Profile URL:** ${user.html_url}
-    `.trim();
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: info,
-        },
-      ],
-    };
-  }
+  return userFormatters.formatGetUserInfoOutput(user);
 }
 
-module.exports = UserHandlers;
+module.exports = {
+  getUserInfo,
+};

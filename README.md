@@ -168,7 +168,86 @@ Once a default repository is set, you can omit `owner` and `repo` parameters fro
 
 ## 🛠️ Complete Tool Reference
 
-This server provides **33 comprehensive tools** for complete GitHub workflow management:
+This server provides **89 comprehensive tools** for complete GitHub workflow management:
+### Newly Added Tools
+
+#### Enhanced Pull Request Management (6 tools)
+- `create_pull_request`
+- `edit_pull_request`
+- `get_pr_details`
+- `list_pr_reviews`
+- `create_pr_review`
+- `list_pr_files`
+
+#### File & Content Management (4 tools)
+- `create_file`
+- `update_file`
+- `upload_file`
+- `delete_file`
+
+#### Security & Access Management (9 tools)
+- `list_deploy_keys`
+- `create_deploy_key`
+- `delete_deploy_key`
+- `list_webhooks`
+- `create_webhook`
+- `edit_webhook`
+- `delete_webhook`
+- `list_secrets`
+- `update_secret`
+
+#### GitHub Actions & Workflows (6 tools)
+- `list_workflows`
+- `list_workflow_runs`
+- `get_workflow_run_details`
+- `trigger_workflow`
+- `download_workflow_artifacts`
+- `cancel_workflow_run`
+
+#### Repository Analytics & Insights (8 tools)
+- `get_repo_stats`
+- `list_repo_topics`
+- `update_repo_topics`
+- `get_repo_languages`
+- `list_stargazers`
+- `list_watchers`
+- `list_forks`
+- `get_repo_traffic`
+
+#### Advanced Search & Discovery (5 tools)
+- `search_issues`
+- `search_commits`
+- `search_code`
+- `search_users`
+- `search_topics`
+
+#### Organization Management (6 tools)
+- `list_org_repos`
+- `list_org_members`
+- `get_org_info`
+- `list_org_teams`
+- `get_team_members`
+- `manage_team_repos`
+
+#### Projects & Boards (Projects V2 focus - 6 tools)
+*Note: These tools are currently placeholders and will be fully implemented in future updates.*
+- `list_repo_projects`
+- `create_project`
+- `list_project_columns`
+- `list_project_cards`
+- `create_project_card`
+- `move_project_card`
+
+#### Advanced Features (6 tools)
+*Note: These tools are currently placeholders and will be fully implemented in future updates.*
+- `code_quality_checks`
+- `custom_dashboards`
+- `automated_reporting`
+- `notification_management`
+- `release_management`
+- `dependency_analysis`
+
+### Existing Core Tools
 
 ### Repository Management Tools
 - **`set_default_repo`**: Set a default owner and repository for subsequent commands to streamline your workflow.

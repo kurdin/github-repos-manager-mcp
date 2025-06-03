@@ -11,42 +11,63 @@ const {
 
 // Import all handler modules
 const GitHubAPIService = require("./services/github-api.cjs");
-const RepositoryHandlers = require("./handlers/repository.cjs");
-const IssueHandlers = require("./handlers/issues.cjs");
-const CommentHandlers = require("./handlers/comments.cjs");
-const PullRequestHandlers = require("./handlers/pull-requests.cjs");
-const UserHandlers = require("./handlers/users.cjs");
-const LabelsHandlers = require("./handlers/labels.cjs");
-const MilestonesHandlers = require("./handlers/milestones.cjs");
-const BranchCommitHandlers = require("./handlers/branches-commits.cjs");
+const repositoryHandlerFunctions = require("./handlers/repository.cjs");
+const issueHandlerFunctions = require("./handlers/issues.cjs");
+const commentHandlerFunctions = require("./handlers/comments.cjs");
+const pullRequestHandlerFunctions = require("./handlers/pull-requests.cjs");
+const userHandlerFunctions = require("./handlers/users.cjs");
+const labelsHandlerFunctions = require("./handlers/labels.cjs");
+const milestonesHandlerFunctions = require("./handlers/milestones.cjs");
+const branchCommitHandlerFunctions = require("./handlers/branches-commits.cjs");
+const EnhancedPullRequestHandlersModule = require("./handlers/enhanced-pull-requests.cjs");
+const FileManagementHandlersModule = require("./handlers/file-management.cjs");
+const SecurityHandlersModule = require("./handlers/security.cjs");
+const AnalyticsHandlersModule = require("./handlers/analytics.cjs");
+const SearchHandlersModule = require("./handlers/search.cjs");
+const OrganizationHandlersModule = require("./handlers/organizations.cjs");
+const AdvancedFeaturesHandlerModule = require("./handlers/advanced-features.cjs");
 const toolsConfig = require("./utils/tools-config.cjs");
 
 class GitHubMCPServer {
   constructor(config = {}) {
+    this.defaultOwner = null;
+    this.defaultRepo = null;
+    this.isRepoLockedByConfig = false; // Flag to indicate if repo is locked by initial config
+    this.disabledTools = new Set();
+
     const token = process.env.GH_TOKEN
       ? process.env.GH_TOKEN.trim()
       : undefined;
 
-    // Initialize API service
     this.api = new GitHubAPIService(token);
 
-    // Initialize all handlers
-    this.repoHandler = new RepositoryHandlers(this.api);
-    this.issueHandler = new IssueHandlers(this.api);
-    this.commentHandler = new CommentHandlers(this.api);
-    this.prHandler = new PullRequestHandlers(this.api);
-    this.userHandler = new UserHandlers(this.api);
-    this.labelsHandler = new LabelsHandlers(this.api);
-    this.milestonesHandler = new MilestonesHandlers(this.api);
-    this.branchCommitHandler = new BranchCommitHandlers(this.api);
+    this.enhancedPrHandler = EnhancedPullRequestHandlersModule;
+    this.fileManagementHandler = FileManagementHandlersModule;
+    this.securityHandler = SecurityHandlersModule;
+    this.analyticsHandler = AnalyticsHandlersModule;
+    this.searchHandler = SearchHandlersModule;
+    this.organizationHandler = OrganizationHandlersModule;
+    this.advancedFeaturesHandler = AdvancedFeaturesHandlerModule;
 
-    // Set default repo from config, environment variables, or keep unset
-    let defaultOwner = config.defaultOwner || process.env.GH_DEFAULT_OWNER;
-    let defaultRepo = config.defaultRepo || process.env.GH_DEFAULT_REPO;
+    const disabledToolsString =
+      config.disabledTools || process.env.GH_DISABLED_TOOLS;
+    if (disabledToolsString) {
+      disabledToolsString
+        .split(",")
+        .forEach((toolName) => this.disabledTools.add(toolName.trim()));
+    }
 
-    if (defaultOwner && defaultRepo) {
-      this.setDefaultRepo(defaultOwner, defaultRepo);
-      console.error(`Default repository set: ${defaultOwner}/${defaultRepo}`);
+    let initialDefaultOwner =
+      config.defaultOwner || process.env.GH_DEFAULT_OWNER;
+    let initialDefaultRepo = config.defaultRepo || process.env.GH_DEFAULT_REPO;
+
+    if (initialDefaultOwner && initialDefaultRepo) {
+      this.defaultOwner = initialDefaultOwner;
+      this.defaultRepo = initialDefaultRepo;
+      this.isRepoLockedByConfig = true;
+      console.error(
+        `Default repository LOCKED by configuration to: ${this.defaultOwner}/${this.defaultRepo}`
+      );
     }
 
     this.server = new Server(
@@ -65,136 +86,510 @@ class GitHubMCPServer {
   }
 
   setDefaultRepo(owner, repo) {
-    this.repoHandler.setDefaultRepo(owner, repo);
-    this.issueHandler.setDefaultRepo(owner, repo);
-    this.commentHandler.setDefaultRepo(owner, repo);
-    this.prHandler.setDefaultRepo(owner, repo);
-    this.labelsHandler.setDefaultRepo(owner, repo);
-    this.milestonesHandler.setDefaultRepo(owner, repo);
-    this.branchCommitHandler.setDefaultRepo(owner, repo);
+    if (this.isRepoLockedByConfig) {
+      const lockMessage = `Repository is locked by server configuration to ${this.defaultOwner}/${this.defaultRepo}. Cannot be changed by tool.`;
+      console.warn(lockMessage);
+      return {
+        content: [{ type: "text", text: lockMessage }],
+        isError: true,
+      };
+    }
+    this.defaultOwner = owner;
+    this.defaultRepo = repo;
+    const successMessage = `Default repository set by tool to: ${owner}/${repo}`;
+    console.error(successMessage);
+    return {
+      content: [{ type: "text", text: successMessage }],
+    };
+  }
+
+  getHandlerArgs(args) {
+    const effectiveArgs = { ...(args || {}) };
+
+    if (this.isRepoLockedByConfig) {
+      if (effectiveArgs.owner && effectiveArgs.owner !== this.defaultOwner) {
+        throw new Error(
+          `Operations are locked to repository ${this.defaultOwner}/${this.defaultRepo}. Provided owner '${effectiveArgs.owner}' is not allowed.`
+        );
+      }
+      if (effectiveArgs.repo && effectiveArgs.repo !== this.defaultRepo) {
+        throw new Error(
+          `Operations are locked to repository ${this.defaultOwner}/${this.defaultRepo}. Provided repo '${effectiveArgs.repo}' is not allowed.`
+        );
+      }
+      effectiveArgs.owner = this.defaultOwner;
+      effectiveArgs.repo = this.defaultRepo;
+    } else {
+      if (!effectiveArgs.owner && this.defaultOwner) {
+        effectiveArgs.owner = this.defaultOwner;
+      }
+      if (!effectiveArgs.repo && this.defaultRepo) {
+        effectiveArgs.repo = this.defaultRepo;
+      }
+    }
+    return effectiveArgs;
   }
 
   setupToolHandlers() {
-    // List available tools
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+      const allTools = Object.values(toolsConfig);
+      const availableTools = allTools.filter(
+        (tool) => !this.disabledTools.has(tool.name)
+      );
       return {
-        tools: Object.values(toolsConfig),
+        tools: availableTools,
       };
     });
 
-    // Handle tool calls
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      const { name, arguments: args } = request.params;
+      const { name, arguments: rawArgs } = request.params; // Renamed to rawArgs to avoid conflict
+      let processedArgs;
 
       try {
+        if (this.disabledTools.has(name)) {
+          throw new Error(
+            `Tool '${name}' is disabled by server configuration.`
+          );
+        }
+
+        // For 'set_default_repo', we don't want to process args through getHandlerArgs
+        // as it might throw an error if the repo is locked and args are different.
+        // The setDefaultRepo method itself handles the locking logic.
+        if (name === "set_default_repo") {
+          if (!rawArgs || !rawArgs.owner || !rawArgs.repo) {
+            throw new Error(
+              "Both owner and repo are required in arguments for set_default_repo"
+            );
+          }
+          return this.setDefaultRepo(rawArgs.owner, rawArgs.repo);
+        }
+
+        // For all other tools, process arguments to apply default/locked repo context
+        processedArgs = this.getHandlerArgs(rawArgs);
+
         switch (name) {
           // Repository tools
           case "list_repos":
-            return await this.repoHandler.listRepos(args || {});
+            return await repositoryHandlerFunctions.listRepos(
+              processedArgs,
+              this.api
+            );
           case "get_repo_info":
-            return await this.repoHandler.getRepoInfo(args || {});
+            return await repositoryHandlerFunctions.getRepoInfo(
+              processedArgs,
+              this.api
+            );
           case "search_repos":
-            return await this.repoHandler.searchRepos(args || {});
+            return await repositoryHandlerFunctions.searchRepos(
+              processedArgs,
+              this.api
+            );
           case "get_repo_contents":
-            return await this.repoHandler.getRepoContents(args || {});
-          case "set_default_repo":
-            // Validate arguments
-            if (!args.owner || !args.repo) {
-              throw new Error("Both owner and repo are required");
-            }
-            // Set the default repo on all handlers
-            this.setDefaultRepo(args.owner, args.repo);
-            // Return success response
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `Default repository set to: ${args.owner}/${args.repo}`,
-                },
-              ],
-            };
+            return await repositoryHandlerFunctions.getRepoContents(
+              processedArgs,
+              this.api
+            );
+          // set_default_repo is handled above
           case "list_repo_collaborators":
-            return await this.repoHandler.listRepoCollaborators(args || {});
+            return await repositoryHandlerFunctions.listRepoCollaborators(
+              processedArgs,
+              this.api
+            );
 
           // Issue tools
           case "list_issues":
-            return await this.issueHandler.listIssues(args || {});
+            return await issueHandlerFunctions.listIssues(
+              processedArgs,
+              this.api
+            );
           case "create_issue":
-            return await this.issueHandler.createIssue(args || {});
+            return await issueHandlerFunctions.createIssue(
+              processedArgs,
+              this.api
+            );
           case "edit_issue":
-            return await this.issueHandler.editIssue(args || {});
+            return await issueHandlerFunctions.editIssue(
+              processedArgs,
+              this.api
+            );
           case "get_issue_details":
-            return await this.issueHandler.getIssueDetails(args || {});
+            return await issueHandlerFunctions.getIssueDetails(
+              processedArgs,
+              this.api
+            );
           case "lock_issue":
-            return await this.issueHandler.lockIssue(args || {});
+            return await issueHandlerFunctions.lockIssue(
+              processedArgs,
+              this.api
+            );
           case "unlock_issue":
-            return await this.issueHandler.unlockIssue(args || {});
+            return await issueHandlerFunctions.unlockIssue(
+              processedArgs,
+              this.api
+            );
           case "add_assignees_to_issue":
-            return await this.issueHandler.addAssigneesToIssue(args || {});
+            return await issueHandlerFunctions.addAssigneesToIssue(
+              processedArgs,
+              this.api
+            );
           case "remove_assignees_from_issue":
-            return await this.issueHandler.removeAssigneesFromIssue(args || {});
+            return await issueHandlerFunctions.removeAssigneesFromIssue(
+              processedArgs,
+              this.api
+            );
 
           // Comment tools
           case "list_issue_comments":
-            return await this.commentHandler.listIssueComments(args || {});
+            return await commentHandlerFunctions.listIssueComments(
+              processedArgs,
+              this.api
+            );
           case "create_issue_comment":
-            return await this.commentHandler.createIssueComment(args || {});
+            return await commentHandlerFunctions.createIssueComment(
+              processedArgs,
+              this.api
+            );
           case "edit_issue_comment":
-            return await this.commentHandler.editIssueComment(args || {});
+            return await commentHandlerFunctions.editIssueComment(
+              processedArgs,
+              this.api
+            );
           case "delete_issue_comment":
-            return await this.commentHandler.deleteIssueComment(args || {});
+            return await commentHandlerFunctions.deleteIssueComment(
+              processedArgs,
+              this.api
+            );
 
           // Pull request tools
           case "list_prs":
-            return await this.prHandler.listPRs(args || {});
+            return await pullRequestHandlerFunctions.listPRs(
+              processedArgs,
+              this.api
+            );
+
+          // Enhanced Pull Request tools
+          case "create_pull_request":
+            return await this.enhancedPrHandler.create_pull_request(
+              processedArgs,
+              this.api
+            );
+          case "edit_pull_request":
+            return await this.enhancedPrHandler.edit_pull_request(
+              processedArgs,
+              this.api
+            );
+          case "get_pr_details":
+            return await this.enhancedPrHandler.get_pr_details(
+              processedArgs,
+              this.api
+            );
+          case "list_pr_reviews":
+            return await this.enhancedPrHandler.list_pr_reviews(
+              processedArgs,
+              this.api
+            );
+          case "create_pr_review":
+            return await this.enhancedPrHandler.create_pr_review(
+              processedArgs,
+              this.api
+            );
+          case "list_pr_files":
+            return await this.enhancedPrHandler.list_pr_files(
+              processedArgs,
+              this.api
+            );
+
+          // File Management tools
+          case "create_file":
+            return await this.fileManagementHandler.createFileHandler(
+              processedArgs,
+              this.api
+            );
+          case "update_file":
+            return await this.fileManagementHandler.updateFileHandler(
+              processedArgs,
+              this.api
+            );
+          case "upload_file":
+            return await this.fileManagementHandler.uploadFileHandler(
+              processedArgs,
+              this.api
+            );
+          case "delete_file":
+            return await this.fileManagementHandler.deleteFileHandler(
+              processedArgs,
+              this.api
+            );
 
           // User tools
           case "get_user_info":
-            return await this.userHandler.getUserInfo(args || {});
+            return await userHandlerFunctions.getUserInfo(
+              processedArgs,
+              this.api
+            );
 
           // Labels tools
           case "list_repo_labels":
-            return await this.labelsHandler.listRepoLabels(args || {});
+            return await labelsHandlerFunctions.listRepoLabels(
+              processedArgs,
+              this.api
+            );
           case "create_label":
-            return await this.labelsHandler.createLabel(args || {});
+            return await labelsHandlerFunctions.createLabel(
+              processedArgs,
+              this.api
+            );
           case "edit_label":
-            return await this.labelsHandler.editLabel(args || {});
+            return await labelsHandlerFunctions.editLabel(
+              processedArgs,
+              this.api
+            );
           case "delete_label":
-            return await this.labelsHandler.deleteLabel(args || {});
+            return await labelsHandlerFunctions.deleteLabel(
+              processedArgs,
+              this.api
+            );
 
           // Milestones tools
           case "list_milestones":
-            return await this.milestonesHandler.listMilestones(args || {});
+            return await milestonesHandlerFunctions.listMilestones(
+              processedArgs,
+              this.api
+            );
           case "create_milestone":
-            return await this.milestonesHandler.createMilestone(args || {});
+            return await milestonesHandlerFunctions.createMilestone(
+              processedArgs,
+              this.api
+            );
           case "edit_milestone":
-            return await this.milestonesHandler.editMilestone(args || {});
+            return await milestonesHandlerFunctions.editMilestone(
+              processedArgs,
+              this.api
+            );
           case "delete_milestone":
-            return await this.milestonesHandler.deleteMilestone(args || {});
+            return await milestonesHandlerFunctions.deleteMilestone(
+              processedArgs,
+              this.api
+            );
 
           // Branch and Commit tools
           case "list_branches":
-            return await this.branchCommitHandler.listBranches(args || {});
+            return await branchCommitHandlerFunctions.listBranches(
+              processedArgs,
+              this.api
+            );
           case "create_branch":
-            return await this.branchCommitHandler.createBranch(args || {});
+            return await branchCommitHandlerFunctions.createBranch(
+              processedArgs,
+              this.api
+            );
           case "list_commits":
-            return await this.branchCommitHandler.listCommits(args || {});
+            return await branchCommitHandlerFunctions.listCommits(
+              processedArgs,
+              this.api
+            );
           case "get_commit_details":
-            return await this.branchCommitHandler.getCommitDetails(args || {});
+            return await branchCommitHandlerFunctions.getCommitDetails(
+              processedArgs,
+              this.api
+            );
           case "compare_commits":
-            return await this.branchCommitHandler.compareCommits(args || {});
+            return await branchCommitHandlerFunctions.compareCommits(
+              processedArgs,
+              this.api
+            );
+
+          // Security & Access Management tools
+          case "list_deploy_keys":
+            return await this.securityHandler.list_deploy_keys(
+              processedArgs,
+              this.api
+            );
+          case "create_deploy_key":
+            return await this.securityHandler.create_deploy_key(
+              processedArgs,
+              this.api
+            );
+          case "delete_deploy_key":
+            return await this.securityHandler.delete_deploy_key(
+              processedArgs,
+              this.api
+            );
+          case "list_webhooks":
+            return await this.securityHandler.list_webhooks(
+              processedArgs,
+              this.api
+            );
+          case "create_webhook":
+            return await this.securityHandler.create_webhook(
+              processedArgs,
+              this.api
+            );
+          case "edit_webhook":
+            return await this.securityHandler.edit_webhook(
+              processedArgs,
+              this.api
+            );
+          case "delete_webhook":
+            return await this.securityHandler.delete_webhook(
+              processedArgs,
+              this.api
+            );
+          case "list_secrets":
+            return await this.securityHandler.list_secrets(
+              processedArgs,
+              this.api
+            );
+          case "update_secret":
+            return await this.securityHandler.update_secret(
+              processedArgs,
+              this.api
+            );
+
+          // Repository Analytics & Insights tools
+          case "get_repo_stats":
+            return await this.analyticsHandler.get_repo_stats(
+              processedArgs,
+              this.api
+            );
+          case "list_repo_topics":
+            return await this.analyticsHandler.list_repo_topics(
+              processedArgs,
+              this.api
+            );
+          case "update_repo_topics":
+            return await this.analyticsHandler.update_repo_topics(
+              processedArgs,
+              this.api
+            );
+          case "get_repo_languages":
+            return await this.analyticsHandler.get_repo_languages(
+              processedArgs,
+              this.api
+            );
+          case "list_stargazers":
+            return await this.analyticsHandler.list_stargazers(
+              processedArgs,
+              this.api
+            );
+          case "list_watchers":
+            return await this.analyticsHandler.list_watchers(
+              processedArgs,
+              this.api
+            );
+          case "list_forks":
+            return await this.analyticsHandler.list_forks(
+              processedArgs,
+              this.api
+            );
+          case "get_repo_traffic":
+            return await this.analyticsHandler.get_repo_traffic(
+              processedArgs,
+              this.api
+            );
+
+          // Search tools
+          case "search_issues":
+            return await this.searchHandler.search_issues(
+              this.api.octokit,
+              processedArgs
+            );
+          case "search_commits":
+            return await this.searchHandler.search_commits(
+              this.api.octokit,
+              processedArgs
+            );
+          case "search_code":
+            return await this.searchHandler.search_code(
+              this.api.octokit,
+              processedArgs
+            );
+          case "search_users":
+            return await this.searchHandler.search_users(
+              this.api.octokit,
+              processedArgs
+            );
+          case "search_topics":
+            return await this.searchHandler.search_topics(
+              this.api.octokit,
+              processedArgs
+            );
+
+          // Organization tools
+          case "list_org_repos":
+            return await this.organizationHandler.listOrgRepos(
+              this.api.octokit,
+              processedArgs
+            );
+          case "list_org_members":
+            return await this.organizationHandler.listOrgMembers(
+              this.api.octokit,
+              processedArgs
+            );
+          case "get_org_info":
+            return await this.organizationHandler.getOrgInfo(
+              this.api.octokit,
+              processedArgs
+            );
+          case "list_org_teams":
+            return await this.organizationHandler.listOrgTeams(
+              this.api.octokit,
+              processedArgs
+            );
+          case "get_team_members":
+            return await this.organizationHandler.getTeamMembers(
+              this.api.octokit,
+              processedArgs
+            );
+          case "manage_team_repos":
+            return await this.organizationHandler.manageTeamRepos(
+              this.api.octokit,
+              processedArgs
+            );
+
+          // Advanced Features tools
+          case "code_quality_checks":
+            return await this.advancedFeaturesHandler.handleCodeQualityChecks(
+              processedArgs,
+              this.api
+            );
+          case "custom_dashboards":
+            return await this.advancedFeaturesHandler.handleCustomDashboards(
+              processedArgs,
+              this.api
+            );
+          case "automated_reporting":
+            return await this.advancedFeaturesHandler.handleAutomatedReporting(
+              processedArgs,
+              this.api
+            );
+          case "notification_management":
+            return await this.advancedFeaturesHandler.handleNotificationManagement(
+              processedArgs,
+              this.api
+            );
+          case "release_management":
+            return await this.advancedFeaturesHandler.handleReleaseManagement(
+              processedArgs,
+              this.api
+            );
+          case "dependency_analysis":
+            return await this.advancedFeaturesHandler.handleDependencyAnalysis(
+              processedArgs,
+              this.api
+            );
 
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {
+        console.error(
+          `Error calling tool ${name}:`,
+          error.message,
+          error.stack
+        );
         return {
-          content: [
-            {
-              type: "text",
-              text: `Error: ${error.message}`,
-            },
-          ],
+          content: [{ type: "text", text: `Error: ${error.message}` }],
           isError: true,
         };
       }
@@ -202,7 +597,6 @@ class GitHubMCPServer {
   }
 
   async run() {
-    // Test GitHub API authentication
     try {
       await this.api.testAuthentication();
     } catch (error) {
@@ -216,7 +610,28 @@ class GitHubMCPServer {
       await this.server.connect(transport);
       console.error("GitHub Repos Manager MCP Server is running...");
 
-      // Keep the process alive by preventing it from exiting
+      const totalToolsCount = Object.keys(toolsConfig).length;
+      const disabledToolsCount = this.disabledTools.size;
+      const availableToolsCount = totalToolsCount - disabledToolsCount;
+
+      if (this.isRepoLockedByConfig) {
+        console.error(
+          `Operations are LOCKED to repository: ${this.defaultOwner}/${this.defaultRepo}`
+        );
+      }
+
+      if (disabledToolsCount === 0) {
+        console.error(`All ${totalToolsCount} tools are available.`);
+      } else {
+        console.error(
+          `${availableToolsCount} out of ${totalToolsCount} tools are available.`
+        );
+        const disabledToolNames = Array.from(this.disabledTools).join(", ");
+        console.error(
+          `Disabled tools (${disabledToolsCount}): ${disabledToolNames}`
+        );
+      }
+
       process.stdin.resume();
     } catch (error) {
       console.error("Failed to connect server:", error);
@@ -225,7 +640,6 @@ class GitHubMCPServer {
   }
 }
 
-// Handle shutdown gracefully
 process.on("SIGINT", async () => {
   console.error("Shutting down GitHub Repos Manager MCP Server...");
   process.exit(0);
