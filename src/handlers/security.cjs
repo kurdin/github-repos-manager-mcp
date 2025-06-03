@@ -1,5 +1,4 @@
-const githubApiService = require("../services/github-api.cjs");
-const { getOwnerRepo } = require("../utils/shared-utils.cjs"); // Assuming a shared util for this
+const { getOwnerRepo } = require("../utils/shared-utils.cjs");
 
 /**
  * @typedef {import('../services/github-api.cjs').GitHubRepo} GitHubRepo
@@ -11,14 +10,14 @@ const { getOwnerRepo } = require("../utils/shared-utils.cjs"); // Assuming a sha
  * @param {string} [args.owner] - Repository owner.
  * @param {string} [args.repo] - Repository name.
  * @param {number} [args.per_page=30] - Number of deploy keys per page.
- * @param {GitHubRepo} defaultRepo - The default repository.
+ * @param {object} apiService - The GitHub API service instance.
  * @returns {Promise<object>} - The result of the operation.
  */
-async function list_deploy_keys(args, defaultRepo) {
+async function list_deploy_keys(args, apiService) {
   try {
-    const { owner, repo } = getOwnerRepo(args, defaultRepo);
+    const { owner, repo } = getOwnerRepo(args, {});
     const { per_page } = args;
-    const keys = await githubApiService.listDeployKeys(owner, repo, per_page);
+    const keys = await apiService.listDeployKeys(owner, repo, per_page);
     return { success: true, data: keys };
   } catch (error) {
     return { success: false, message: error.message, error: error.stack };
@@ -36,9 +35,9 @@ async function list_deploy_keys(args, defaultRepo) {
  * @param {GitHubRepo} defaultRepo - The default repository.
  * @returns {Promise<object>} - The result of the operation.
  */
-async function create_deploy_key(args, defaultRepo) {
+async function create_deploy_key(args, apiService) {
   try {
-    const { owner, repo } = getOwnerRepo(args, defaultRepo);
+    const { owner, repo } = getOwnerRepo(args, {});
     const { title, key, read_only } = args;
     if (!title || !key) {
       return {
@@ -46,7 +45,7 @@ async function create_deploy_key(args, defaultRepo) {
         message: "Missing required arguments: title and key.",
       };
     }
-    const newKey = await githubApiService.createDeployKey(
+    const newKey = await apiService.createDeployKey(
       owner,
       repo,
       title,
@@ -68,14 +67,14 @@ async function create_deploy_key(args, defaultRepo) {
  * @param {GitHubRepo} defaultRepo - The default repository.
  * @returns {Promise<object>} - The result of the operation.
  */
-async function delete_deploy_key(args, defaultRepo) {
+async function delete_deploy_key(args, apiService) {
   try {
-    const { owner, repo } = getOwnerRepo(args, defaultRepo);
+    const { owner, repo } = getOwnerRepo(args, {});
     const { key_id } = args;
     if (!key_id) {
       return { success: false, message: "Missing required argument: key_id." };
     }
-    await githubApiService.deleteDeployKey(owner, repo, key_id);
+    await apiService.deleteDeployKey(owner, repo, key_id);
     return {
       success: true,
       message: `Deploy key ${key_id} deleted successfully.`,
@@ -94,11 +93,11 @@ async function delete_deploy_key(args, defaultRepo) {
  * @param {GitHubRepo} defaultRepo - The default repository.
  * @returns {Promise<object>} - The result of the operation.
  */
-async function list_webhooks(args, defaultRepo) {
+async function list_webhooks(args, apiService) {
   try {
-    const { owner, repo } = getOwnerRepo(args, defaultRepo);
+    const { owner, repo } = getOwnerRepo(args, {});
     const { per_page } = args;
-    const webhooks = await githubApiService.listWebhooks(owner, repo, per_page);
+    const webhooks = await apiService.listWebhooks(owner, repo, per_page);
     return { success: true, data: webhooks };
   } catch (error) {
     return { success: false, message: error.message, error: error.stack };
@@ -120,9 +119,9 @@ async function list_webhooks(args, defaultRepo) {
  * @param {GitHubRepo} defaultRepo - The default repository.
  * @returns {Promise<object>} - The result of the operation.
  */
-async function create_webhook(args, defaultRepo) {
+async function create_webhook(args, apiService) {
   try {
-    const { owner, repo } = getOwnerRepo(args, defaultRepo);
+    const { owner, repo } = getOwnerRepo(args, {});
     const { config, events, active } = args;
     if (!config || !config.url) {
       return {
@@ -131,7 +130,7 @@ async function create_webhook(args, defaultRepo) {
       };
     }
     // TODO: Add webhook signature validation logic if secret is provided (potentially in a utility)
-    const newWebhook = await githubApiService.createWebhook(
+    const newWebhook = await apiService.createWebhook(
       owner,
       repo,
       config,
@@ -158,9 +157,9 @@ async function create_webhook(args, defaultRepo) {
  * @param {GitHubRepo} defaultRepo - The default repository.
  * @returns {Promise<object>} - The result of the operation.
  */
-async function edit_webhook(args, defaultRepo) {
+async function edit_webhook(args, apiService) {
   try {
-    const { owner, repo } = getOwnerRepo(args, defaultRepo);
+    const { owner, repo } = getOwnerRepo(args, {});
     const { hook_id, config, events, add_events, remove_events, active } = args;
     if (!hook_id) {
       return { success: false, message: "Missing required argument: hook_id." };
@@ -178,7 +177,7 @@ async function edit_webhook(args, defaultRepo) {
       };
     }
 
-    const updatedWebhook = await githubApiService.updateWebhook(
+    const updatedWebhook = await apiService.updateWebhook(
       owner,
       repo,
       hook_id,
@@ -199,14 +198,14 @@ async function edit_webhook(args, defaultRepo) {
  * @param {GitHubRepo} defaultRepo - The default repository.
  * @returns {Promise<object>} - The result of the operation.
  */
-async function delete_webhook(args, defaultRepo) {
+async function delete_webhook(args, apiService) {
   try {
-    const { owner, repo } = getOwnerRepo(args, defaultRepo);
+    const { owner, repo } = getOwnerRepo(args, {});
     const { hook_id } = args;
     if (!hook_id) {
       return { success: false, message: "Missing required argument: hook_id." };
     }
-    await githubApiService.deleteWebhook(owner, repo, hook_id);
+    await apiService.deleteWebhook(owner, repo, hook_id);
     return {
       success: true,
       message: `Webhook ${hook_id} deleted successfully.`,
@@ -225,11 +224,11 @@ async function delete_webhook(args, defaultRepo) {
  * @param {GitHubRepo} defaultRepo - The default repository.
  * @returns {Promise<object>} - The result of the operation.
  */
-async function list_secrets(args, defaultRepo) {
+async function list_secrets(args, apiService) {
   try {
-    const { owner, repo } = getOwnerRepo(args, defaultRepo);
+    const { owner, repo } = getOwnerRepo(args, {});
     const { per_page } = args;
-    const secrets = await githubApiService.listSecrets(owner, repo, per_page);
+    const secrets = await apiService.listSecrets(owner, repo, per_page);
     // Ensure secret values are not returned, only names and metadata
     return { success: true, data: secrets };
   } catch (error) {
@@ -248,9 +247,9 @@ async function list_secrets(args, defaultRepo) {
  * @param {GitHubRepo} defaultRepo - The default repository.
  * @returns {Promise<object>} - The result of the operation.
  */
-async function update_secret(args, defaultRepo) {
+async function update_secret(args, apiService) {
   try {
-    const { owner, repo } = getOwnerRepo(args, defaultRepo);
+    const { owner, repo } = getOwnerRepo(args, {});
     const { secret_name, encrypted_value, key_id } = args;
     if (!secret_name || !encrypted_value || !key_id) {
       return {
@@ -261,7 +260,7 @@ async function update_secret(args, defaultRepo) {
     }
     // The API call itself handles create or update.
     // GitHub API for creating/updating secrets does not return the secret value, only status.
-    await githubApiService.createOrUpdateSecret(
+    await apiService.createOrUpdateSecret(
       owner,
       repo,
       secret_name,

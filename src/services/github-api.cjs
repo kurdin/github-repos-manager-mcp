@@ -1,4 +1,5 @@
 const fs = require("node:fs").promises;
+const { handleError, validateRequired, ErrorTypes } = require("../utils/error-handler.cjs");
 const path = require("node:path");
 
 class GitHubAPIService {
@@ -48,7 +49,8 @@ class GitHubAPIService {
   }
 
   async makeGitHubRequest(endpoint, options = {}) {
-    console.error("makeGitHubRequest method entered.");
+    // Debug logging disabled to avoid MCP protocol interference
+    // console.error("makeGitHubRequest method entered.");
     const url = `https://api.github.com${endpoint}`;
     const headers = {
       Authorization: `token ${this.token}`,
@@ -102,9 +104,10 @@ class GitHubAPIService {
     branch // Optional: Specify a branch
   ) {
     let endpoint = `/repos/${owner}/${repo}/contents/${filePathInRepo}`;
-    console.error(
-      `Attempting to create/update file at: ${endpoint} on branch: ${branch}`
-    );
+    // Debug logging disabled to avoid MCP protocol interference
+    // console.error(
+    //   `Attempting to create/update file at: ${endpoint} on branch: ${branch}`
+    // );
 
     const payload = {
       message: commitMessage,
@@ -145,9 +148,10 @@ class GitHubAPIService {
     branch // Optional: Specify a branch
   ) {
     let endpoint = `/repos/${owner}/${repo}/contents/${filePathInRepo}`;
-    console.error(
-      `Attempting to delete file at: ${endpoint} on branch: ${branch}`
-    );
+    // Debug logging disabled to avoid MCP protocol interference
+    // console.error(
+    //   `Attempting to delete file at: ${endpoint} on branch: ${branch}`
+    // );
 
     const payload = {
       message: commitMessage,
@@ -180,7 +184,8 @@ class GitHubAPIService {
     if (ref) {
       endpoint += `?ref=${encodeURIComponent(ref)}`;
     }
-    console.error(`Attempting to get contents for: ${endpoint}`);
+    // Debug logging disabled to avoid MCP protocol interference
+    // console.error(`Attempting to get contents for: ${endpoint}`);
     try {
       const result = await this.makeGitHubRequest(endpoint);
       return result;
@@ -202,7 +207,8 @@ class GitHubAPIService {
   async testAuthentication() {
     try {
       const user = await this.makeGitHubRequest("/user");
-      console.error(`Authenticated as: ${user.login}`);
+      // Debug logging disabled to avoid MCP protocol interference  
+      // console.error(`Authenticated as: ${user.login}`);
       return user;
     } catch (error) {
       console.error("Authentication failed:", error.message);
@@ -947,13 +953,14 @@ class GitHubAPIService {
   // --- Placeholder Methods for Advanced Features ---
 
   async runCodeQualityChecks(owner, repo, tool_name, config_path) {
-    console.log(
-      "Placeholder: GitHubAPIService.runCodeQualityChecks called with:",
-      owner,
-      repo,
-      tool_name,
-      config_path
-    );
+    // Debug logging disabled to avoid MCP protocol interference
+    // console.log(
+    //   "Placeholder: GitHubAPIService.runCodeQualityChecks called with:",
+    //   owner,
+    //   repo,
+    //   tool_name,
+    //   config_path
+    // );
     // In a real implementation, this might involve:
     // - Triggering a GitHub Action that runs linters/scanners.
     // - Fetching results from a third-party code quality service API.
@@ -966,14 +973,15 @@ class GitHubAPIService {
   }
 
   async manageCustomDashboard(owner, repo, dashboard_id, action, settings) {
-    console.log(
-      "Placeholder: GitHubAPIService.manageCustomDashboard called with:",
-      owner,
-      repo,
-      dashboard_id,
-      action,
-      settings
-    );
+    // Debug logging disabled to avoid MCP protocol interference
+    // console.log(
+    //   "Placeholder: GitHubAPIService.manageCustomDashboard called with:",
+    //   owner,
+    //   repo,
+    //   dashboard_id,
+    //   action,
+    //   settings
+    // );
     // This would likely involve interacting with a custom datastore or a
     // visualization service API, rather than directly with GitHub's primary API.
     // Or, it could involve fetching various GitHub stats and composing them.
@@ -985,13 +993,14 @@ class GitHubAPIService {
   }
 
   async generateAutomatedReport(owner, repo, report_type, output_format) {
-    console.log(
-      "Placeholder: GitHubAPIService.generateAutomatedReport called with:",
-      owner,
-      repo,
-      report_type,
-      output_format
-    );
+    // Debug logging disabled to avoid MCP protocol interference
+    // console.log(
+    //   "Placeholder: GitHubAPIService.generateAutomatedReport called with:",
+    //   owner,
+    //   repo,
+    //   report_type,
+    //   output_format
+    // );
     // This would involve:
     // - Fetching various data points from GitHub (issues, PRs, commits, traffic).
     // - Aggregating and formatting this data into the specified report_type and output_format.
@@ -1003,12 +1012,13 @@ class GitHubAPIService {
   }
 
   async manageNotifications(action, thread_id, options = {}) {
-    console.log(
-      "Placeholder: GitHubAPIService.manageNotifications called with:",
-      action,
-      thread_id,
-      options
-    );
+    // Debug logging disabled to avoid MCP protocol interference
+    // console.log(
+    //   "Placeholder: GitHubAPIService.manageNotifications called with:",
+    //   action,
+    //   thread_id,
+    //   options
+    // );
     // This would use GitHub's Notifications API.
     // Example for listing notifications:
     // const endpoint = `/notifications?all=${options.all}&participating=${options.participating}`;
@@ -1022,13 +1032,14 @@ class GitHubAPIService {
   }
 
   async manageRelease(owner, repo, action, releaseData = {}) {
-    console.log(
-      "Placeholder: GitHubAPIService.manageRelease called with:",
-      owner,
-      repo,
-      action,
-      releaseData
-    );
+    // Debug logging disabled to avoid MCP protocol interference
+    // console.log(
+    //   "Placeholder: GitHubAPIService.manageRelease called with:",
+    //   owner,
+    //   repo,
+    //   action,
+    //   releaseData
+    // );
     // This would use GitHub's Releases API.
     // Examples:
     // List: GET /repos/{owner}/{repo}/releases
@@ -1049,13 +1060,14 @@ class GitHubAPIService {
   }
 
   async analyzeDependencies(owner, repo, report_type, depth) {
-    console.log(
-      "Placeholder: GitHubAPIService.analyzeDependencies called with:",
-      owner,
-      repo,
-      report_type,
-      depth
-    );
+    // Debug logging disabled to avoid MCP protocol interference
+    // console.log(
+    //   "Placeholder: GitHubAPIService.analyzeDependencies called with:",
+    //   owner,
+    //   repo,
+    //   report_type,
+    //   depth
+    // );
     // This could involve:
     // - Using GitHub's Dependency Graph API (GraphQL).
     // - Fetching dependency files (e.g., package.json, pom.xml) and analyzing them.

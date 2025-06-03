@@ -1,17 +1,14 @@
-// const githubApiService = require("../services/github-api"); // Will be passed in as apiService
-const { getRepoOwnerAndName } = require("../utils/shared-utils.cjs"); // Corrected path
-
 async function list_workflows(params, apiService) {
-  // Changed octokit to apiService
-  const { owner: paramOwner, repo: paramRepo, per_page, page } = params;
-  try {
-    const { owner, repo } = await getRepoOwnerAndName(
-      paramOwner,
-      paramRepo,
-      apiService.octokit // Assuming getRepoOwnerAndName needs octokit instance from the apiService
+  const { owner, repo, per_page, page } = params;
+  
+  if (!owner || !repo) {
+    throw new Error(
+      "Owner and repository name are required for list_workflows. Please provide them in arguments or ensure a default is set."
     );
+  }
+  
+  try {
     const result = await apiService.listWorkflows(
-      // Use passed-in apiService
       owner,
       repo,
       per_page,
@@ -25,21 +22,25 @@ async function list_workflows(params, apiService) {
 }
 
 async function list_workflow_runs(params, apiService) {
-  // Changed octokit to apiService
   const {
-    owner: paramOwner,
-    repo: paramRepo,
+    owner,
+    repo,
     workflow_id,
     ...otherParams
   } = params;
-  try {
-    const { owner, repo } = await getRepoOwnerAndName(
-      paramOwner,
-      paramRepo,
-      apiService.octokit // Assuming getRepoOwnerAndName needs octokit instance
+  
+  if (!owner || !repo) {
+    throw new Error(
+      "Owner and repository name are required for list_workflow_runs. Please provide them in arguments or ensure a default is set."
     );
+  }
+  
+  if (!workflow_id) {
+    throw new Error("workflow_id is required for list_workflow_runs.");
+  }
+  
+  try {
     const result = await apiService.listWorkflowRuns(
-      // Use passed-in apiService
       owner,
       repo,
       workflow_id,
@@ -53,21 +54,25 @@ async function list_workflow_runs(params, apiService) {
 }
 
 async function get_workflow_run_details(params, apiService) {
-  // Changed octokit to apiService
   const {
-    owner: paramOwner,
-    repo: paramRepo,
+    owner,
+    repo,
     run_id,
     exclude_pull_requests,
   } = params;
-  try {
-    const { owner, repo } = await getRepoOwnerAndName(
-      paramOwner,
-      paramRepo,
-      apiService.octokit // Assuming getRepoOwnerAndName needs octokit instance
+  
+  if (!owner || !repo) {
+    throw new Error(
+      "Owner and repository name are required for get_workflow_run_details. Please provide them in arguments or ensure a default is set."
     );
+  }
+  
+  if (!run_id) {
+    throw new Error("run_id is required for get_workflow_run_details.");
+  }
+  
+  try {
     const result = await apiService.getWorkflowRunDetails(
-      // Use passed-in apiService
       owner,
       repo,
       run_id,
@@ -81,22 +86,30 @@ async function get_workflow_run_details(params, apiService) {
 }
 
 async function trigger_workflow(params, apiService) {
-  // Changed octokit to apiService
   const {
-    owner: paramOwner,
-    repo: paramRepo,
+    owner,
+    repo,
     workflow_id,
     ref,
     inputs,
   } = params;
-  try {
-    const { owner, repo } = await getRepoOwnerAndName(
-      paramOwner,
-      paramRepo,
-      apiService.octokit // Assuming getRepoOwnerAndName needs octokit instance
+  
+  if (!owner || !repo) {
+    throw new Error(
+      "Owner and repository name are required for trigger_workflow. Please provide them in arguments or ensure a default is set."
     );
+  }
+  
+  if (!workflow_id) {
+    throw new Error("workflow_id is required for trigger_workflow.");
+  }
+  
+  if (!ref) {
+    throw new Error("ref (branch or tag) is required for trigger_workflow.");
+  }
+  
+  try {
     const result = await apiService.triggerWorkflow(
-      // Use passed-in apiService
       owner,
       repo,
       workflow_id,
@@ -111,21 +124,25 @@ async function trigger_workflow(params, apiService) {
 }
 
 async function download_workflow_artifacts(params, apiService) {
-  // Changed octokit to apiService
   const {
-    owner: paramOwner,
-    repo: paramRepo,
+    owner,
+    repo,
     artifact_id,
     archive_format,
   } = params;
-  try {
-    const { owner, repo } = await getRepoOwnerAndName(
-      paramOwner,
-      paramRepo,
-      apiService.octokit // Assuming getRepoOwnerAndName needs octokit instance
+  
+  if (!owner || !repo) {
+    throw new Error(
+      "Owner and repository name are required for download_workflow_artifacts. Please provide them in arguments or ensure a default is set."
     );
+  }
+  
+  if (!artifact_id) {
+    throw new Error("artifact_id is required for download_workflow_artifacts.");
+  }
+  
+  try {
     const result = await apiService.downloadWorkflowArtifact(
-      // Use passed-in apiService
       owner,
       repo,
       artifact_id,
@@ -142,16 +159,20 @@ async function download_workflow_artifacts(params, apiService) {
 }
 
 async function cancel_workflow_run(params, apiService) {
-  // Changed octokit to apiService
-  const { owner: paramOwner, repo: paramRepo, run_id } = params;
-  try {
-    const { owner, repo } = await getRepoOwnerAndName(
-      paramOwner,
-      paramRepo,
-      apiService.octokit // Assuming getRepoOwnerAndName needs octokit instance
+  const { owner, repo, run_id } = params;
+  
+  if (!owner || !repo) {
+    throw new Error(
+      "Owner and repository name are required for cancel_workflow_run. Please provide them in arguments or ensure a default is set."
     );
+  }
+  
+  if (!run_id) {
+    throw new Error("run_id is required for cancel_workflow_run.");
+  }
+  
+  try {
     const result = await apiService.cancelWorkflowRun(
-      // Use passed-in apiService
       owner,
       repo,
       run_id

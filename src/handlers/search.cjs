@@ -1,4 +1,3 @@
-const githubApiService = require("../services/github-api.cjs");
 const { logError, logInfo } = require("../utils/shared-utils.cjs");
 
 /**
@@ -18,10 +17,9 @@ const { logError, logInfo } = require("../utils/shared-utils.cjs");
  * @param {number} [args.page=1] - Page number.
  * @returns {Promise<object>} The search results.
  */
-async function search_issues(octokit, defaultRepo, args) {
+async function search_issues(octokit, defaultRepo, args, apiService) {
   try {
-    logInfo(`Searching issues with query: ${args.query}`);
-    const results = await githubApiService.searchIssues(octokit, args);
+    const results = await apiService.searchIssues(octokit, args);
     return results;
   } catch (error) {
     logError(`Error in search_issues: ${error.message}`, error);
@@ -41,10 +39,9 @@ async function search_issues(octokit, defaultRepo, args) {
  * @param {number} [args.page=1] - Page number.
  * @returns {Promise<object>} The search results.
  */
-async function search_commits(octokit, defaultRepo, args) {
+async function search_commits(octokit, defaultRepo, args, apiService) {
   try {
-    logInfo(`Searching commits with query: ${args.query}`);
-    const results = await githubApiService.searchCommits(octokit, args);
+    const results = await apiService.searchCommits(octokit, args);
     return results;
   } catch (error) {
     logError(`Error in search_commits: ${error.message}`, error);
@@ -64,10 +61,9 @@ async function search_commits(octokit, defaultRepo, args) {
  * @param {number} [args.page=1] - Page number.
  * @returns {Promise<object>} The search results.
  */
-async function search_code(octokit, defaultRepo, args) {
+async function search_code(octokit, defaultRepo, args, apiService) {
   try {
-    logInfo(`Searching code with query: ${args.query}`);
-    const results = await githubApiService.searchCode(octokit, args);
+    const results = await apiService.searchCode(octokit, args);
     return results;
   } catch (error) {
     logError(`Error in search_code: ${error.message}`, error);
@@ -87,10 +83,9 @@ async function search_code(octokit, defaultRepo, args) {
  * @param {number} [args.page=1] - Page number.
  * @returns {Promise<object>} The search results.
  */
-async function search_users(octokit, defaultRepo, args) {
+async function search_users(octokit, defaultRepo, args, apiService) {
   try {
-    logInfo(`Searching users with query: ${args.query}`);
-    const results = await githubApiService.searchUsers(octokit, args);
+    const results = await apiService.searchUsers(octokit, args);
     return results;
   } catch (error) {
     logError(`Error in search_users: ${error.message}`, error);
@@ -110,14 +105,13 @@ async function search_users(octokit, defaultRepo, args) {
  * @param {number} [args.page=1] - Page number.
  * @returns {Promise<object>} The search results.
  */
-async function search_topics(octokit, defaultRepo, args) {
+async function search_topics(octokit, defaultRepo, args, apiService) {
   try {
-    logInfo(`Searching topics with query: ${args.query}`);
     // Note: GitHub API for topics search is actually a search for repositories by topic.
     // The endpoint is search/repositories with a q parameter like "topic:your-topic"
     // We will adapt the searchRepositories function or create a specific one if needed.
-    // For now, assuming a direct githubApiService.searchTopics exists or will be created.
-    const results = await githubApiService.searchTopics(octokit, args);
+    // For now, assuming a direct apiService.searchTopics exists or will be created.
+    const results = await apiService.searchTopics(octokit, args);
     return results;
   } catch (error) {
     logError(`Error in search_topics: ${error.message}`, error);

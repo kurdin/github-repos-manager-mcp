@@ -25,8 +25,12 @@ const SecurityHandlersModule = require("./handlers/security.cjs");
 const AnalyticsHandlersModule = require("./handlers/analytics.cjs");
 const SearchHandlersModule = require("./handlers/search.cjs");
 const OrganizationHandlersModule = require("./handlers/organizations.cjs");
+const ProjectsHandlersModule = require("./handlers/projects.cjs");
+const WorkflowsHandlersModule = require("./handlers/workflows.cjs");
 const AdvancedFeaturesHandlerModule = require("./handlers/advanced-features.cjs");
 const toolsConfig = require("./utils/tools-config.cjs");
+const { formatHandlerResponse } = require("./utils/response-formatter.cjs");
+const { handleError } = require("./utils/error-handler.cjs");
 
 class GitHubMCPServer {
   constructor(config = {}) {
@@ -48,6 +52,8 @@ class GitHubMCPServer {
     this.analyticsHandler = AnalyticsHandlersModule;
     this.searchHandler = SearchHandlersModule;
     this.organizationHandler = OrganizationHandlersModule;
+    this.projectsHandler = ProjectsHandlersModule;
+    this.workflowsHandler = WorkflowsHandlersModule;
     this.advancedFeaturesHandler = AdvancedFeaturesHandlerModule;
 
     // Set default repository if provided
@@ -57,11 +63,11 @@ class GitHubMCPServer {
     // Handle disabled tools from config or environment
     const disabledToolsFromEnv = process.env.GH_DISABLED_TOOLS;
     const disabledToolsFromConfig = config.disabledTools;
-    
+
     if (disabledToolsFromEnv || disabledToolsFromConfig) {
       // If config.disabledTools is already an array, use it directly
       if (Array.isArray(disabledToolsFromConfig)) {
-        disabledToolsFromConfig.forEach((toolName) => 
+        disabledToolsFromConfig.forEach((toolName) =>
           this.disabledTools.add(toolName.trim())
         );
       } else if (disabledToolsFromEnv) {
@@ -75,13 +81,13 @@ class GitHubMCPServer {
     // Handle allowed tools from config or environment
     const allowedToolsFromEnv = process.env.GH_ALLOWED_TOOLS;
     const allowedToolsFromConfig = config.allowedTools;
-    
+
     if (allowedToolsFromEnv || allowedToolsFromConfig) {
       this.allowedTools = new Set();
-      
+
       // If config.allowedTools is already an array, use it directly
       if (Array.isArray(allowedToolsFromConfig)) {
-        allowedToolsFromConfig.forEach((toolName) => 
+        allowedToolsFromConfig.forEach((toolName) =>
           this.allowedTools.add(toolName.trim())
         );
       } else if (allowedToolsFromEnv) {
@@ -95,13 +101,13 @@ class GitHubMCPServer {
     // Handle allowed repos from config or environment
     const allowedReposFromEnv = process.env.GH_ALLOWED_REPOS;
     const allowedReposFromConfig = config.allowedRepos;
-    
+
     if (allowedReposFromEnv || allowedReposFromConfig) {
       this.allowedRepos = new Set();
-      
+
       // If config.allowedRepos is already an array, use it directly
       if (Array.isArray(allowedReposFromConfig)) {
-        allowedReposFromConfig.forEach((repo) => 
+        allowedReposFromConfig.forEach((repo) =>
           this.allowedRepos.add(repo.trim())
         );
       } else if (allowedReposFromEnv) {
@@ -131,27 +137,30 @@ class GitHubMCPServer {
     // First check if this repo is allowed
     if (this.allowedRepos) {
       const repoIdentifier = `${owner}/${repo}`;
-      const isAllowed = this.allowedRepos.has(repoIdentifier) || 
-                       this.allowedRepos.has(owner) ||
-                       Array.from(this.allowedRepos).some(allowed => {
-                         if (allowed.includes('/')) {
-                           return allowed === repoIdentifier;
-                         }
-                         return allowed === owner;
-                       });
-      
+      const isAllowed =
+        this.allowedRepos.has(repoIdentifier) ||
+        this.allowedRepos.has(owner) ||
+        Array.from(this.allowedRepos).some((allowed) => {
+          if (allowed.includes("/")) {
+            return allowed === repoIdentifier;
+          }
+          return allowed === owner;
+        });
+
       if (!isAllowed) {
-        const allowedList = Array.from(this.allowedRepos).join(', ');
+        const allowedList = Array.from(this.allowedRepos).join(", ");
         return {
-          content: [{ 
-            type: "text", 
-            text: `Repository ${repoIdentifier} is not in the allowed repositories list. Allowed: ${allowedList}` 
-          }],
+          content: [
+            {
+              type: "text",
+              text: `Repository ${repoIdentifier} is not in the allowed repositories list. Allowed: ${allowedList}`,
+            },
+          ],
           isError: true,
         };
       }
     }
-    
+
     this.defaultOwner = owner;
     this.defaultRepo = repo;
     const successMessage = `Default repository set to: ${owner}/${repo}`;
@@ -175,22 +184,25 @@ class GitHubMCPServer {
     // Check if the repository is allowed
     if (this.allowedRepos && effectiveArgs.owner) {
       let isAllowed = false;
-      
+
       if (effectiveArgs.repo) {
         // Check full repo path
         const repoIdentifier = `${effectiveArgs.owner}/${effectiveArgs.repo}`;
-        isAllowed = this.allowedRepos.has(repoIdentifier) || this.allowedRepos.has(effectiveArgs.owner);
+        isAllowed =
+          this.allowedRepos.has(repoIdentifier) ||
+          this.allowedRepos.has(effectiveArgs.owner);
       } else {
         // Only owner specified, check if owner is allowed
-        isAllowed = this.allowedRepos.has(effectiveArgs.owner) ||
-                   Array.from(this.allowedRepos).some(allowed => 
-                     allowed.startsWith(`${effectiveArgs.owner}/`)
-                   );
+        isAllowed =
+          this.allowedRepos.has(effectiveArgs.owner) ||
+          Array.from(this.allowedRepos).some((allowed) =>
+            allowed.startsWith(`${effectiveArgs.owner}/`)
+          );
       }
-      
+
       if (!isAllowed) {
-        const allowedList = Array.from(this.allowedRepos).join(', ');
-        const attempted = effectiveArgs.repo 
+        const allowedList = Array.from(this.allowedRepos).join(", ");
+        const attempted = effectiveArgs.repo
           ? `${effectiveArgs.owner}/${effectiveArgs.repo}`
           : effectiveArgs.owner;
         throw new Error(
@@ -198,44 +210,84 @@ class GitHubMCPServer {
         );
       }
     }
-    
+
     return effectiveArgs;
   }
 
   setupToolHandlers() {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      const allTools = Object.values(toolsConfig);
-      let availableTools;
-      
-      if (this.allowedTools) {
-        // If allowedTools is set, only those tools are available (disabledTools is ignored)
-        availableTools = allTools.filter(
-          (tool) => this.allowedTools.has(tool.name)
-        );
-      } else {
-        // If allowedTools is not set, all tools except disabled ones are available
-        availableTools = allTools.filter(
-          (tool) => !this.disabledTools.has(tool.name)
-        );
+      try {
+        const allTools = Object.values(toolsConfig);
+        let availableTools;
+
+        if (this.allowedTools) {
+          // If allowedTools is set, only those tools are available (disabledTools is ignored)
+          availableTools = allTools.filter((tool) =>
+            this.allowedTools.has(tool.name)
+          );
+        } else {
+          // If allowedTools is not set, all tools except disabled ones are available
+          availableTools = allTools.filter(
+            (tool) => !this.disabledTools.has(tool.name)
+          );
+        }
+
+        return {
+          tools: availableTools,
+        };
+      } catch (error) {
+        const errorResponse = handleError(error, "list_tools");
+        return {
+          tools: [],
+          error: errorResponse.message,
+        };
       }
-      
-      return {
-        tools: availableTools,
-      };
     });
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      const { name, arguments: rawArgs } = request.params; // Renamed to rawArgs to avoid conflict
       let processedArgs;
+      let name, rawArgs;
 
       try {
+        // Validate request structure
+        if (!request || typeof request !== "object") {
+          throw new Error("Invalid request: request must be an object");
+        }
+
+        if (!request.params || typeof request.params !== "object") {
+          throw new Error("Invalid request: missing or invalid params");
+        }
+
+        name = request.params.name;
+        rawArgs = request.params.arguments;
+
+        // Validate tool name
+        if (!name || typeof name !== "string" || name.trim() === "") {
+          throw new Error(
+            "Invalid request: tool name is required and must be a non-empty string"
+          );
+        }
+
+        name = name.trim();
+
+        // Ensure rawArgs is an object (or null)
+        if (
+          rawArgs !== null &&
+          rawArgs !== undefined &&
+          typeof rawArgs !== "object"
+        ) {
+          throw new Error(
+            "Invalid request: arguments must be an object, null, or undefined"
+          );
+        }
+
+        // Default to empty object if args are not provided
+        rawArgs = rawArgs || {};
         // Check if tool is allowed based on configuration
         if (this.allowedTools) {
           // If allowedTools is set, only those tools can be used
           if (!this.allowedTools.has(name)) {
-            throw new Error(
-              `Tool '${name}' is not in the allowed tools list.`
-            );
+            throw new Error(`Tool '${name}' is not in the allowed tools list.`);
           }
         } else {
           // If allowedTools is not set, check disabled tools
@@ -256,6 +308,11 @@ class GitHubMCPServer {
             );
           }
           return this.setDefaultRepo(rawArgs.owner, rawArgs.repo);
+        }
+
+        // Validate API service is available
+        if (!this.api) {
+          throw new Error("GitHub API service is not initialized");
         }
 
         // For all other tools, process arguments to apply default/locked repo context
@@ -363,56 +420,80 @@ class GitHubMCPServer {
 
           // Enhanced Pull Request tools
           case "create_pull_request":
-            return await this.enhancedPrHandler.create_pull_request(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.enhancedPrHandler.create_pull_request(
+                processedArgs,
+                this.api
+              )
             );
           case "edit_pull_request":
-            return await this.enhancedPrHandler.edit_pull_request(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.enhancedPrHandler.edit_pull_request(
+                processedArgs,
+                this.api
+              )
             );
           case "get_pr_details":
-            return await this.enhancedPrHandler.get_pr_details(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.enhancedPrHandler.get_pr_details(
+                processedArgs,
+                this.api
+              )
             );
           case "list_pr_reviews":
-            return await this.enhancedPrHandler.list_pr_reviews(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.enhancedPrHandler.list_pr_reviews(
+                processedArgs,
+                this.api
+              )
             );
           case "create_pr_review":
-            return await this.enhancedPrHandler.create_pr_review(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.enhancedPrHandler.create_pr_review(
+                processedArgs,
+                this.api
+              )
             );
           case "list_pr_files":
-            return await this.enhancedPrHandler.list_pr_files(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.enhancedPrHandler.list_pr_files(
+                processedArgs,
+                this.api
+              )
             );
 
           // File Management tools
           case "create_file":
-            return await this.fileManagementHandler.createFileHandler(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.fileManagementHandler.createFileHandler(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
           case "update_file":
-            return await this.fileManagementHandler.updateFileHandler(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.fileManagementHandler.updateFileHandler(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
           case "upload_file":
-            return await this.fileManagementHandler.uploadFileHandler(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.fileManagementHandler.uploadFileHandler(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
           case "delete_file":
-            return await this.fileManagementHandler.deleteFileHandler(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.fileManagementHandler.deleteFileHandler(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
 
           // User tools
@@ -495,195 +576,396 @@ class GitHubMCPServer {
 
           // Security & Access Management tools
           case "list_deploy_keys":
-            return await this.securityHandler.list_deploy_keys(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.securityHandler.list_deploy_keys(
+                processedArgs,
+                this.api
+              )
             );
           case "create_deploy_key":
-            return await this.securityHandler.create_deploy_key(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.securityHandler.create_deploy_key(
+                processedArgs,
+                this.api
+              )
             );
           case "delete_deploy_key":
-            return await this.securityHandler.delete_deploy_key(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.securityHandler.delete_deploy_key(
+                processedArgs,
+                this.api
+              )
             );
           case "list_webhooks":
-            return await this.securityHandler.list_webhooks(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.securityHandler.list_webhooks(processedArgs, this.api)
             );
           case "create_webhook":
-            return await this.securityHandler.create_webhook(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.securityHandler.create_webhook(processedArgs, this.api)
             );
           case "edit_webhook":
-            return await this.securityHandler.edit_webhook(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.securityHandler.edit_webhook(processedArgs, this.api)
             );
           case "delete_webhook":
-            return await this.securityHandler.delete_webhook(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.securityHandler.delete_webhook(processedArgs, this.api)
             );
           case "list_secrets":
-            return await this.securityHandler.list_secrets(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.securityHandler.list_secrets(processedArgs, this.api)
             );
           case "update_secret":
-            return await this.securityHandler.update_secret(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.securityHandler.update_secret(processedArgs, this.api)
             );
 
           // Repository Analytics & Insights tools
           case "get_repo_stats":
-            return await this.analyticsHandler.get_repo_stats(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.analyticsHandler.get_repo_stats(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
           case "list_repo_topics":
-            return await this.analyticsHandler.list_repo_topics(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.analyticsHandler.list_repo_topics(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
           case "update_repo_topics":
-            return await this.analyticsHandler.update_repo_topics(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.analyticsHandler.update_repo_topics(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
           case "get_repo_languages":
-            return await this.analyticsHandler.get_repo_languages(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.analyticsHandler.get_repo_languages(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
           case "list_stargazers":
-            return await this.analyticsHandler.list_stargazers(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.analyticsHandler.list_stargazers(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
           case "list_watchers":
-            return await this.analyticsHandler.list_watchers(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.analyticsHandler.list_watchers(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
           case "list_forks":
-            return await this.analyticsHandler.list_forks(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.analyticsHandler.list_forks(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
           case "get_repo_traffic":
-            return await this.analyticsHandler.get_repo_traffic(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.analyticsHandler.get_repo_traffic(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
 
           // Search tools
           case "search_issues":
-            return await this.searchHandler.search_issues(
-              this.api.octokit,
-              processedArgs
+            return formatHandlerResponse(
+              await this.searchHandler.search_issues(
+                this.api.octokit,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                processedArgs,
+                this.api
+              )
             );
           case "search_commits":
-            return await this.searchHandler.search_commits(
-              this.api.octokit,
-              processedArgs
+            return formatHandlerResponse(
+              await this.searchHandler.search_commits(
+                this.api.octokit,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                processedArgs,
+                this.api
+              )
             );
           case "search_code":
-            return await this.searchHandler.search_code(
-              this.api.octokit,
-              processedArgs
+            return formatHandlerResponse(
+              await this.searchHandler.search_code(
+                this.api.octokit,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                processedArgs,
+                this.api
+              )
             );
           case "search_users":
-            return await this.searchHandler.search_users(
-              this.api.octokit,
-              processedArgs
+            return formatHandlerResponse(
+              await this.searchHandler.search_users(
+                this.api.octokit,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                processedArgs,
+                this.api
+              )
             );
           case "search_topics":
-            return await this.searchHandler.search_topics(
-              this.api.octokit,
-              processedArgs
+            return formatHandlerResponse(
+              await this.searchHandler.search_topics(
+                this.api.octokit,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                processedArgs,
+                this.api
+              )
             );
 
           // Organization tools
           case "list_org_repos":
-            return await this.organizationHandler.listOrgRepos(
-              this.api.octokit,
-              processedArgs
+            return formatHandlerResponse(
+              await this.organizationHandler.listOrgRepos(
+                this.api.octokit,
+                processedArgs,
+                this.api
+              )
             );
           case "list_org_members":
-            return await this.organizationHandler.listOrgMembers(
-              this.api.octokit,
-              processedArgs
+            return formatHandlerResponse(
+              await this.organizationHandler.listOrgMembers(
+                this.api.octokit,
+                processedArgs,
+                this.api
+              )
             );
           case "get_org_info":
-            return await this.organizationHandler.getOrgInfo(
-              this.api.octokit,
-              processedArgs
+            return formatHandlerResponse(
+              await this.organizationHandler.getOrgInfo(
+                this.api.octokit,
+                processedArgs,
+                this.api
+              )
             );
           case "list_org_teams":
-            return await this.organizationHandler.listOrgTeams(
-              this.api.octokit,
-              processedArgs
+            return formatHandlerResponse(
+              await this.organizationHandler.listOrgTeams(
+                this.api.octokit,
+                processedArgs,
+                this.api
+              )
             );
           case "get_team_members":
-            return await this.organizationHandler.getTeamMembers(
-              this.api.octokit,
-              processedArgs
+            return formatHandlerResponse(
+              await this.organizationHandler.getTeamMembers(
+                this.api.octokit,
+                processedArgs,
+                this.api
+              )
             );
           case "manage_team_repos":
-            return await this.organizationHandler.manageTeamRepos(
-              this.api.octokit,
-              processedArgs
+            return formatHandlerResponse(
+              await this.organizationHandler.manageTeamRepos(
+                this.api.octokit,
+                processedArgs,
+                this.api
+              )
+            );
+
+          // Projects & Boards tools
+          case "list_repo_projects":
+            return formatHandlerResponse(
+              await this.projectsHandler.list_repo_projects(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
+            );
+          case "create_project":
+            return formatHandlerResponse(
+              await this.projectsHandler.create_project(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
+            );
+          case "list_project_columns":
+            return formatHandlerResponse(
+              await this.projectsHandler.list_project_columns(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
+            );
+          case "list_project_cards":
+            return formatHandlerResponse(
+              await this.projectsHandler.list_project_cards(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
+            );
+          case "create_project_card":
+            return formatHandlerResponse(
+              await this.projectsHandler.create_project_card(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
+            );
+          case "move_project_card":
+            return formatHandlerResponse(
+              await this.projectsHandler.move_project_card(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
+            );
+
+          // GitHub Actions & Workflows tools
+          case "list_workflows":
+            return formatHandlerResponse(
+              await this.workflowsHandler.list_workflows(
+                processedArgs,
+                this.api
+              )
+            );
+          case "list_workflow_runs":
+            return formatHandlerResponse(
+              await this.workflowsHandler.list_workflow_runs(
+                processedArgs,
+                this.api
+              )
+            );
+          case "get_workflow_run_details":
+            return formatHandlerResponse(
+              await this.workflowsHandler.get_workflow_run_details(
+                processedArgs,
+                this.api
+              )
+            );
+          case "trigger_workflow":
+            return formatHandlerResponse(
+              await this.workflowsHandler.trigger_workflow(
+                processedArgs,
+                this.api
+              )
+            );
+          case "download_workflow_artifacts":
+            return formatHandlerResponse(
+              await this.workflowsHandler.download_workflow_artifacts(
+                processedArgs,
+                this.api
+              )
+            );
+          case "cancel_workflow_run":
+            return formatHandlerResponse(
+              await this.workflowsHandler.cancel_workflow_run(
+                processedArgs,
+                this.api
+              )
             );
 
           // Advanced Features tools
           case "code_quality_checks":
-            return await this.advancedFeaturesHandler.handleCodeQualityChecks(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.advancedFeaturesHandler.handleCodeQualityChecks(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
           case "custom_dashboards":
-            return await this.advancedFeaturesHandler.handleCustomDashboards(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.advancedFeaturesHandler.handleCustomDashboards(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
           case "automated_reporting":
-            return await this.advancedFeaturesHandler.handleAutomatedReporting(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.advancedFeaturesHandler.handleAutomatedReporting(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
           case "notification_management":
-            return await this.advancedFeaturesHandler.handleNotificationManagement(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.advancedFeaturesHandler.handleNotificationManagement(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
           case "release_management":
-            return await this.advancedFeaturesHandler.handleReleaseManagement(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.advancedFeaturesHandler.handleReleaseManagement(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
           case "dependency_analysis":
-            return await this.advancedFeaturesHandler.handleDependencyAnalysis(
-              processedArgs,
-              this.api
+            return formatHandlerResponse(
+              await this.advancedFeaturesHandler.handleDependencyAnalysis(
+                processedArgs,
+                { owner: this.defaultOwner, repo: this.defaultRepo },
+                this.api
+              )
             );
 
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {
-        console.error(
-          `Error calling tool ${name}:`,
-          error.message,
-          error.stack
-        );
+        // Ensure we always have a safe fallback error message
+        let errorMessage = "An unexpected error occurred";
+        let toolName = name || "unknown_tool";
+
+        try {
+          // Use enhanced error handling
+          const errorResponse = handleError(error, `tool:${toolName}`, {
+            toolName: toolName,
+            arguments: rawArgs,
+            processedArgs: processedArgs,
+          });
+          errorMessage = errorResponse.message;
+        } catch (handlerError) {
+          // If even the error handler fails, use a simple message
+          errorMessage = `Error in ${toolName}: ${
+            error?.message || "Unknown error occurred"
+          }`;
+
+          // Log to stderr to avoid MCP protocol interference
+          process.stderr.write(
+            `Error handler failed: ${handlerError.message}\n`
+          );
+          process.stderr.write(
+            `Original error: ${error?.message || "Unknown"}\n`
+          );
+        }
+
         return {
-          content: [{ type: "text", text: `Error: ${error.message}` }],
+          content: [
+            {
+              type: "text",
+              text: errorMessage,
+            },
+          ],
           isError: true,
         };
       }
@@ -706,17 +988,17 @@ class GitHubMCPServer {
 
       const totalToolsCount = Object.keys(toolsConfig).length;
       let availableToolsCount;
-      
+
       // Show default repository if set
       if (this.defaultOwner && this.defaultRepo) {
         console.error(
           `Default repository: ${this.defaultOwner}/${this.defaultRepo}`
         );
       }
-      
+
       // Show allowed repositories if restricted
       if (this.allowedRepos) {
-        const allowedReposList = Array.from(this.allowedRepos).join(', ');
+        const allowedReposList = Array.from(this.allowedRepos).join(", ");
         console.error(
           `Repository operations restricted to: ${allowedReposList}`
         );
@@ -736,7 +1018,7 @@ class GitHubMCPServer {
         // When allowedTools is not set, all tools except disabled ones are available
         const disabledToolsCount = this.disabledTools.size;
         availableToolsCount = totalToolsCount - disabledToolsCount;
-        
+
         if (disabledToolsCount === 0) {
           console.error(`All ${totalToolsCount} tools are available.`);
         } else {
@@ -758,8 +1040,29 @@ class GitHubMCPServer {
   }
 }
 
+// Global error handlers to prevent server crashes
+process.on("uncaughtException", (error) => {
+  process.stderr.write(`Uncaught Exception: ${error.message}\n`);
+  process.stderr.write(`Stack: ${error.stack}\n`);
+  // Don't exit on uncaught exceptions - try to continue running
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  process.stderr.write(
+    `Unhandled Rejection at: ${promise}, reason: ${reason}\n`
+  );
+  // Don't exit on unhandled rejections - try to continue running
+});
+
 process.on("SIGINT", async () => {
   console.error("Shutting down GitHub Repos Manager MCP Server...");
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
+  console.error(
+    "Received SIGTERM, shutting down GitHub Repos Manager MCP Server..."
+  );
   process.exit(0);
 });
 

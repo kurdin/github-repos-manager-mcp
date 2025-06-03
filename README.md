@@ -112,6 +112,21 @@ Add the appropriate configuration to your MCP client (Claude Desktop, Roo Code, 
 
 #### Using npx (Recommended - No Installation!)
 
+```bash
+# Run directly with npx
+npx github-repos-manager-mcp
+```
+
+### Option 2: Clone and Install
+
+```bash
+git clone https://github.com/kurdin/github-repos-manager-mcp.git
+cd github-repos-manager-mcp
+npm install
+```
+
+### 2.
+
 **For macOS/Linux:**
 ```json
 {

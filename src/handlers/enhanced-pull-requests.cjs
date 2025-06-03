@@ -1,5 +1,3 @@
-const githubApiService = require("../services/github-api.cjs");
-
 /**
  * Creates a new pull request.
  * @param {object} params - The parameters for creating the pull request.
@@ -9,10 +7,11 @@ const githubApiService = require("../services/github-api.cjs");
  * @param {string} params.head - The name of the branch where your changes are implemented.
  * @param {string} params.base - The name of the branch you want the changes pulled into.
  * @param {string} [params.body] - The body of the pull request.
+ * @param {object} apiService - The GitHub API service instance.
  * @returns {Promise<object>} The created pull request object.
  */
-async function create_pull_request({ owner, repo, title, head, base, body }) {
-  return githubApiService.createPullRequest(
+async function create_pull_request({ owner, repo, title, head, base, body }, apiService) {
+  return apiService.createPullRequest(
     owner,
     repo,
     title,
@@ -44,8 +43,8 @@ async function edit_pull_request({
   state,
   base,
   maintainer_can_modify,
-}) {
-  return githubApiService.updatePullRequest(owner, repo, pull_number, {
+}, apiService) {
+  return apiService.updatePullRequest(owner, repo, pull_number, {
     title,
     body,
     state,
@@ -62,8 +61,8 @@ async function edit_pull_request({
  * @param {number} params.pull_number - The number of the pull request.
  * @returns {Promise<object>} The pull request object with detailed information.
  */
-async function get_pr_details({ owner, repo, pull_number }) {
-  return githubApiService.getPullRequest(owner, repo, pull_number);
+async function get_pr_details({ owner, repo, pull_number }, apiService) {
+  return apiService.getPullRequest(owner, repo, pull_number);
 }
 
 /**
@@ -82,8 +81,8 @@ async function list_pr_reviews({
   pull_number,
   per_page = 30,
   page = 1,
-}) {
-  return githubApiService.listPullRequestReviews(
+}, apiService) {
+  return apiService.listPullRequestReviews(
     owner,
     repo,
     pull_number,
@@ -112,8 +111,8 @@ async function create_pr_review({
   body,
   event,
   comments,
-}) {
-  return githubApiService.createPullRequestReview(owner, repo, pull_number, {
+}, apiService) {
+  return apiService.createPullRequestReview(owner, repo, pull_number, {
     commit_id,
     body,
     event,
@@ -137,8 +136,8 @@ async function list_pr_files({
   pull_number,
   per_page = 30,
   page = 1,
-}) {
-  return githubApiService.listPullRequestFiles(
+}, apiService) {
+  return apiService.listPullRequestFiles(
     owner,
     repo,
     pull_number,

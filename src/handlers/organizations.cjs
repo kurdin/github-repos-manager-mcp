@@ -1,6 +1,4 @@
-const githubApi = require("../services/github-api.cjs");
-const { handleError, logError } = require("../utils/shared-utils.cjs");
-const { validateRequiredParams } = require("../utils/validators.cjs");
+const { handleError, logError, validateRequiredParams } = require("../utils/shared-utils.cjs");
 
 /**
  * @typedef {import('../services/github-api').GitHubError} GitHubError
@@ -19,12 +17,13 @@ const { validateRequiredParams } = require("../utils/validators.cjs");
  * @param {string} [params.direction] - The direction to sort the results by. Can be one of: asc, desc. Default: when using full_name: asc, otherwise desc.
  * @param {number} [params.per_page=30] - The number of results per page (max 100).
  * @param {number} [params.page=1] - The page number of the results to fetch.
+ * @param {object} apiService - The GitHub API service instance.
  * @returns {Promise<OctokitResponse<any> | { error: string, details?: any }>} The list of organization repositories or an error object.
  */
-async function listOrgRepos(octokit, params) {
+async function listOrgRepos(octokit, params, apiService) {
   try {
     validateRequiredParams(params, ["org"]);
-    return await githubApi.listOrgRepositories(octokit, params);
+    return await apiService.listOrgRepositories(octokit, params);
   } catch (error) {
     logError(error, "Error in listOrgRepos handler");
     return handleError(error, "Failed to list organization repositories.");
@@ -43,10 +42,10 @@ async function listOrgRepos(octokit, params) {
  * @param {number} [params.page=1] - The page number of the results to fetch.
  * @returns {Promise<OctokitResponse<any> | { error: string, details?: any }>} The list of organization members or an error object.
  */
-async function listOrgMembers(octokit, params) {
+async function listOrgMembers(octokit, params, apiService) {
   try {
     validateRequiredParams(params, ["org"]);
-    return await githubApi.listOrgMembers(octokit, params);
+    return await apiService.listOrgMembers(octokit, params);
   } catch (error) {
     logError(error, "Error in listOrgMembers handler");
     return handleError(error, "Failed to list organization members.");
@@ -61,10 +60,10 @@ async function listOrgMembers(octokit, params) {
  * @param {string} params.org - The organization name.
  * @returns {Promise<OctokitResponse<any> | { error: string, details?: any }>} The organization information or an error object.
  */
-async function getOrgInfo(octokit, params) {
+async function getOrgInfo(octokit, params, apiService) {
   try {
     validateRequiredParams(params, ["org"]);
-    return await githubApi.getOrgDetails(octokit, params.org);
+    return await apiService.getOrgDetails(octokit, params.org);
   } catch (error) {
     logError(error, "Error in getOrgInfo handler");
     return handleError(error, "Failed to get organization information.");
@@ -81,10 +80,10 @@ async function getOrgInfo(octokit, params) {
  * @param {number} [params.page=1] - The page number of the results to fetch.
  * @returns {Promise<OctokitResponse<any> | { error: string, details?: any }>} The list of organization teams or an error object.
  */
-async function listOrgTeams(octokit, params) {
+async function listOrgTeams(octokit, params, apiService) {
   try {
     validateRequiredParams(params, ["org"]);
-    return await githubApi.listOrgTeams(octokit, params);
+    return await apiService.listOrgTeams(octokit, params);
   } catch (error) {
     logError(error, "Error in listOrgTeams handler");
     return handleError(error, "Failed to list organization teams.");
@@ -103,10 +102,10 @@ async function listOrgTeams(octokit, params) {
  * @param {number} [params.page=1] - The page number of the results to fetch.
  * @returns {Promise<OctokitResponse<any> | { error: string, details?: any }>} The list of team members or an error object.
  */
-async function getTeamMembers(octokit, params) {
+async function getTeamMembers(octokit, params, apiService) {
   try {
     validateRequiredParams(params, ["org", "team_slug"]);
-    return await githubApi.listTeamMembers(octokit, params);
+    return await apiService.listTeamMembers(octokit, params);
   } catch (error) {
     logError(error, "Error in getTeamMembers handler");
     return handleError(error, "Failed to get team members.");
@@ -128,14 +127,14 @@ async function getTeamMembers(octokit, params) {
  *                                      If not provided, the team's access to the repository is removed.
  * @returns {Promise<OctokitResponse<any> | { error: string, details?: any }>} The result of the operation or an error object.
  */
-async function manageTeamRepos(octokit, params) {
+async function manageTeamRepos(octokit, params, apiService) {
   try {
     validateRequiredParams(params, ["org", "team_slug", "owner", "repo"]);
     const { org, team_slug, owner, repo, permission } = params;
 
     if (permission) {
       // Add or update team repository permissions
-      return await githubApi.addOrUpdateTeamRepoPermissions(octokit, {
+      return await apiService.addOrUpdateTeamRepoPermissions(octokit, {
         org,
         team_slug,
         owner,
@@ -144,7 +143,7 @@ async function manageTeamRepos(octokit, params) {
       });
     } else {
       // Remove team repository access
-      return await githubApi.removeTeamRepo(octokit, {
+      return await apiService.removeTeamRepo(octokit, {
         org,
         team_slug,
         owner,
