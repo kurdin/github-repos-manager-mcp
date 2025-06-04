@@ -1,12 +1,13 @@
 // src/formatters/repository.cjs
 
+const { toMarkdownTable } = require("../utils/markdown.cjs");
+
 function formatListReposOutput(reposData) {
   if (!Array.isArray(reposData)) {
     console.error(
       "formatListReposOutput: reposData is not an array",
       reposData
     );
-    // Potentially return an error structure or an empty list message
     return {
       content: [
         { type: "text", text: "Error: Could not retrieve repository list." },
@@ -14,31 +15,23 @@ function formatListReposOutput(reposData) {
       isError: true,
     };
   }
-  const formatted = reposData.map((repo) => ({
-    name: repo.full_name,
-    description: repo.description || "No description",
-    private: repo.private,
-    language: repo.language || "N/A",
-    stars: repo.stargazers_count,
-    forks: repo.forks_count,
-    updated: repo.updated_at,
-    url: repo.html_url,
-  }));
+
+  const table = toMarkdownTable(reposData, [
+    {
+      header: "Repository",
+      accessor: (r) => `[${r.full_name}](${r.html_url})${r.private ? " (private)" : ""}`,
+    },
+    { header: "Description", accessor: (r) => r.description || "No description" },
+    { header: "Language", accessor: (r) => r.language || "N/A" },
+    { header: "Stars", accessor: "stargazers_count" },
+    { header: "Forks", accessor: "forks_count" },
+  ]);
 
   return {
     content: [
       {
         type: "text",
-        text: `Found ${reposData.length} repositories:\n\n${formatted
-          .map(
-            (repo) =>
-              `**${repo.name}** ${repo.private ? "(private)" : "(public)"}\n` +
-              `Description: ${repo.description}\n` +
-              `Language: ${repo.language} | Stars: ${repo.stars} | Forks: ${repo.forks}\n` +
-              `Updated: ${new Date(repo.updated).toLocaleDateString()}\n` +
-              `URL: ${repo.url}\n`
-          )
-          .join("\n")}`,
+        text: `Found ${reposData.length} repositories:\n\n${table}`,
       },
     ],
   };
